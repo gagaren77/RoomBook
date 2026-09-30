@@ -19,7 +19,10 @@ export async function GET(req: Request) {
     const end = searchParams.get('end');
     const mine = searchParams.get('mine');
 
+    const includeCancelled = searchParams.get('includeCancelled') === 'true';
+
     let whereClause: any = {};
+    if (!includeCancelled) whereClause.status = { not: 'CANCELLED' };
 
     if (roomId) whereClause.roomId = roomId;
     if (campusId) whereClause.room = { campusId };

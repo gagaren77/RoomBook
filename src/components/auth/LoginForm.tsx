@@ -48,82 +48,95 @@ export function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-100">
-            <BuildingOfficeIcon className="h-10 w-10 text-blue-600" />
-          </div>
+    <div className="grid min-h-screen lg:grid-cols-2">
+      {/* Brand panel */}
+      <div className="relative hidden overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl" />
+        <div className="relative flex items-center gap-3 text-white">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur">
+            <BuildingOfficeIcon className="h-6 w-6" />
+          </span>
+          <span className="text-xl font-bold tracking-tight">RoomBook</span>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-          School Room Booking
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Sign in to your account
-        </p>
+        <div className="relative max-w-md text-white">
+          <h1 className="text-4xl font-bold leading-tight tracking-tight">
+            Book any room, on any campus, in seconds.
+          </h1>
+          <p className="mt-4 text-lg text-indigo-100">
+            One shared calendar for classrooms, labs and meeting spaces, with no double bookings.
+          </p>
+        </div>
+        <p className="relative text-sm text-indigo-200">Midwestern Career College</p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <div className="mb-6">
+      {/* Sign-in panel */}
+      <div className="flex items-center justify-center px-4 py-12 sm:px-8">
+        <div className="w-full max-w-md">
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-600/30">
+              <BuildingOfficeIcon className="h-6 w-6" />
+            </span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">RoomBook</span>
+          </div>
+
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back</h2>
+          <p className="mt-2 text-sm text-slate-500">Sign in to manage and book rooms.</p>
+
+          <div className="mt-8 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-card sm:p-8">
             <Button
               type="button"
               variant="primary"
-              className="w-full h-11 text-base font-semibold"
+              size="lg"
+              className="w-full"
               onClick={handleOktaSignIn}
             >
               Sign in with Okta
             </Button>
-          </div>
 
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-wide">
+                <span className="bg-white px-3 text-slate-400">or use email</span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">or sign in with email</span>
-            </div>
-          </div>
 
-          <form className="space-y-6" onSubmit={handleCredentialsSignIn}>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              label="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <form className="space-y-5" onSubmit={handleCredentialsSignIn}>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                label="Email address"
+                placeholder="you@school.edu"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
 
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              label="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                label="Password"
+                placeholder="Your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
 
-            <div>
-              <Button
-                type="submit"
-                className="w-full"
-                loading={loading}
-              >
+              <Button type="submit" variant="secondary" size="lg" className="w-full" loading={loading}>
                 Sign in
               </Button>
-            </div>
-          </form>
-
-          <div className="mt-6">
-            <p className="text-center text-sm text-gray-500">
-              Forgot password? Contact your administrator
-            </p>
+            </form>
           </div>
+
+          <p className="mt-6 text-center text-sm text-slate-500">
+            Forgot your password? Ask an administrator to reset it.
+          </p>
         </div>
       </div>
     </div>

@@ -51,10 +51,21 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const { role, name, password } = body;
 
     let updateData: any = {};
-    if (role) updateData.role = role;
+    if (role) {
+      if (!['ADMIN', 'SCHEDULER', 'INSTRUCTOR'].includes(role)) {
+        return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+      }
+      if (session.user.id === params.id && role !== 'ADMIN') {
+        return NextResponse.json({ error: 'You cannot remove your own admin role' }, { status: 400 });
+      }
+      updateData.role = role;
+    }
     if (name !== undefined) updateData.name = name;
-    
+
     if (password) {
+      if (String(password).length < 8) {
+        return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+      }
       updateData.password = await bcrypt.hash(password, 10);
     }
 
@@ -86,6 +97,14 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     if (session.user.id === params.id) {
       return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
+    }
+
+    const bookingCount = await prisma.booking.count({ where: { createdById: params.id } });
+    if (bookingCount > 0) {
+      return NextResponse.json(
+        { error: `This user has ${bookingCount} booking(s) and cannot be deleted. Change their role instead.` },
+        { status: 409 }
+      );
     }
 
     const user = await prisma.user.delete({

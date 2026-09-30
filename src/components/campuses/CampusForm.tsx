@@ -22,8 +22,8 @@ export function CampusForm({ initialData, onSubmit, onCancel }: CampusFormProps)
     state: initialData?.state || '',
     zipCode: initialData?.zipCode || '',
     phone: initialData?.phone || '',
-    latitude: initialData?.latitude?.toString() || '',
-    longitude: initialData?.longitude?.toString() || '',
+    lat: initialData?.lat?.toString() || '',
+    lng: initialData?.lng?.toString() || '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,8 +37,8 @@ export function CampusForm({ initialData, onSubmit, onCancel }: CampusFormProps)
     try {
       const submitData = {
         ...formData,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        lat: formData.lat ? parseFloat(formData.lat) : null,
+        lng: formData.lng ? parseFloat(formData.lng) : null,
       };
       await onSubmit(submitData);
     } finally {
@@ -115,19 +115,19 @@ export function CampusForm({ initialData, onSubmit, onCancel }: CampusFormProps)
           <div className="mt-3 grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-md border border-gray-200">
             <Input
               label="Latitude"
-              name="latitude"
+              name="lat"
               type="number"
               step="any"
-              value={formData.latitude}
+              value={formData.lat}
               onChange={handleChange}
               placeholder="41.8781"
             />
             <Input
               label="Longitude"
-              name="longitude"
+              name="lng"
               type="number"
               step="any"
-              value={formData.longitude}
+              value={formData.lng}
               onChange={handleChange}
               placeholder="-87.6298"
             />

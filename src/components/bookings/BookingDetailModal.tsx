@@ -79,7 +79,7 @@ export function BookingDetailModal({ isOpen, onClose, booking, canEdit, onEdit, 
             
             <div className="flex items-start text-sm text-gray-600">
               <UserIcon className="mr-2 h-5 w-5 text-gray-400" />
-              <span>Created by {booking.user?.name}</span>
+              <span>Created by {booking.createdBy?.name || booking.createdBy?.email}</span>
             </div>
           </div>
 

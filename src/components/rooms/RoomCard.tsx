@@ -12,7 +12,7 @@ interface RoomCardProps {
 
 export function RoomCard({ room, isAdmin, onEdit, onDelete }: RoomCardProps) {
   return (
-    <div className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 transition-all hover:shadow-md flex flex-col">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover flex flex-col">
       <div className="p-5 flex-1">
         <div className="flex justify-between items-start">
           <div>

@@ -1,9 +1,6 @@
 import './globals.css';
-import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import AuthSessionProvider from '@/components/providers/SessionProvider';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
   title: 'School Room Booking System',
@@ -17,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full bg-gray-50">
-      <body className={`${inter.className} h-full`}>
+      <body className="h-full font-sans">
         <AuthSessionProvider>
           {children}
           <Toaster position="top-right" />

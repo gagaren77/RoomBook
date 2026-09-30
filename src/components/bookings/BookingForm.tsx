@@ -141,26 +141,26 @@ export function BookingForm({ initialData, onSubmit, onCancel, preselectedDate }
       
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Campus *</label>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">Campus *</label>
           <select
             name="campusId"
             value={formData.campusId}
             onChange={handleChange}
             required
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className=""
           >
             <option value="" disabled>Select campus</option>
             {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Room *</label>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">Room *</label>
           <select
             name="roomId"
             value={formData.roomId}
             onChange={handleChange}
             required
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className=""
             disabled={!formData.campusId}
           >
             <option value="" disabled>Select room</option>
@@ -199,7 +199,7 @@ export function BookingForm({ initialData, onSubmit, onCancel, preselectedDate }
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Attendees</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">Attendees</label>
         <div className="flex flex-wrap gap-2 mb-2">
           {attendees.map(email => (
             <span key={email} className="inline-flex items-center rounded-full bg-blue-100 py-0.5 pl-2.5 pr-1 text-sm font-medium text-blue-700">
@@ -221,7 +221,7 @@ export function BookingForm({ initialData, onSubmit, onCancel, preselectedDate }
             onChange={(e) => setAttendeeInput(e.target.value)}
             onKeyDown={handleKeyDownAttendee}
             placeholder="email@example.com"
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className=""
           />
           <Button type="button" variant="secondary" onClick={handleAddAttendee}>
             Add
@@ -230,18 +230,18 @@ export function BookingForm({ initialData, onSubmit, onCancel, preselectedDate }
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
         <textarea
           name="description"
           rows={2}
           value={formData.description}
           onChange={handleChange}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          className=""
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Event Color</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">Event Color</label>
         <div className="flex space-x-2">
           {COLORS.map(color => (
             <button

@@ -40,10 +40,17 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { email, name, role, password } = body;
+    const { name, role, password } = body;
+    const email = String(body.email || '').trim().toLowerCase();
 
     if (!email || !password || !role) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ error: 'Email, password and role are required' }, { status: 400 });
+    }
+    if (!['ADMIN', 'SCHEDULER', 'INSTRUCTOR'].includes(role)) {
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+    }
+    if (String(password).length < 8) {
+      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });

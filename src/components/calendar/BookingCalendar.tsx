@@ -21,8 +21,8 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, isLoadin
     title: `${booking.title} (${booking.room?.name})`,
     start: booking.startTime,
     end: booking.endTime,
-    backgroundColor: booking.color || '#3b82f6',
-    borderColor: booking.color || '#3b82f6',
+    backgroundColor: booking.color || '#6366f1',
+    borderColor: booking.color || '#6366f1',
     extendedProps: { booking }
   }));
 
@@ -37,9 +37,9 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, isLoadin
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 relative">
+    <div className="relative rounded-2xl border border-slate-200/70 bg-white p-4 shadow-card sm:p-6">
       {isLoading && (
-        <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-lg">
+        <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-2xl backdrop-blur-[1px]">
           <LoadingSpinner className="h-8 w-8 text-blue-600" />
         </div>
       )}
@@ -74,31 +74,6 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, isLoadin
         />
       </div>
       
-      <style jsx global>{`
-        .fc .fc-button-primary {
-          background-color: #ffffff;
-          border-color: #d1d5db;
-          color: #374151;
-        }
-        .fc .fc-button-primary:not(:disabled):active,
-        .fc .fc-button-primary:not(:disabled).fc-button-active {
-          background-color: #f3f4f6;
-          border-color: #d1d5db;
-          color: #111827;
-        }
-        .fc .fc-button-primary:hover {
-          background-color: #f9fafb;
-          border-color: #d1d5db;
-          color: #111827;
-        }
-        .fc .fc-toolbar-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-        }
-        .fc-event {
-          cursor: pointer;
-        }
-      `}</style>
     </div>
   );
 }

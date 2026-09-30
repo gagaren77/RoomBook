@@ -95,13 +95,13 @@ export function RoomForm({ initialData, onSubmit, onCancel }: RoomFormProps) {
       />
       
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Campus *</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">Campus *</label>
         <select
           name="campusId"
           value={formData.campusId}
           onChange={handleChange}
           required
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          className=""
         >
           <option value="" disabled>Select a campus</option>
           {campuses.map(campus => (
@@ -136,18 +136,18 @@ export function RoomForm({ initialData, onSubmit, onCancel }: RoomFormProps) {
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
         <textarea
           name="description"
           rows={3}
           value={formData.description}
           onChange={handleChange}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          className=""
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Amenities</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">Amenities</label>
         <div className="flex flex-wrap gap-2 mb-2">
           {amenities.map(amenity => (
             <span key={amenity} className="inline-flex items-center rounded-full bg-blue-100 py-0.5 pl-2.5 pr-1 text-sm font-medium text-blue-700">
@@ -169,7 +169,7 @@ export function RoomForm({ initialData, onSubmit, onCancel }: RoomFormProps) {
           onChange={(e) => setAmenityInput(e.target.value)}
           onKeyDown={handleAddAmenity}
           placeholder="Type and press Enter to add..."
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          className=""
         />
       </div>
 

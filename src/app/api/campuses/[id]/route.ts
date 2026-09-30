@@ -39,10 +39,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const body = await req.json();
-    
+
+    const toNumber = (v: any) =>
+      v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v);
+
+    const data: any = {};
+    for (const key of ['name', 'address', 'city', 'state', 'zipCode'] as const) {
+      if (body[key] !== undefined) data[key] = String(body[key]).trim();
+    }
+    if (body.phone !== undefined) data.phone = body.phone ? String(body.phone).trim() : null;
+    if (body.lat !== undefined || body.latitude !== undefined) data.lat = toNumber(body.lat ?? body.latitude);
+    if (body.lng !== undefined || body.longitude !== undefined) data.lng = toNumber(body.lng ?? body.longitude);
+    if (body.isActive !== undefined) data.isActive = Boolean(body.isActive);
+
+    if (data.name === '') {
+      return NextResponse.json({ error: 'Campus name is required' }, { status: 400 });
+    }
+
     const campus = await prisma.campus.update({
       where: { id: params.id },
-      data: body
+      data
     });
 
     return NextResponse.json(campus);

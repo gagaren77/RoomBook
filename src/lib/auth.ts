@@ -31,7 +31,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email: credentials.email.trim().toLowerCase() }
         });
 
         if (!user || !user.password) {
@@ -83,6 +83,7 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.role = dbUser.role;
           token.id = dbUser.id;
+          token.name = dbUser.name;
         }
       }
       return token;

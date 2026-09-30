@@ -71,7 +71,7 @@ export function CampusesPageClient() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || 'Something went wrong');
+        throw new Error(error.error || error.message || 'Something went wrong');
       }
 
       toast.success(isEditing ? 'Campus updated successfully' : 'Campus created successfully');
@@ -92,7 +92,7 @@ export function CampusesPageClient() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || 'Something went wrong');
+        throw new Error(error.error || error.message || 'Something went wrong');
       }
 
       toast.success('Campus deleted successfully');
@@ -103,7 +103,7 @@ export function CampusesPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Navigation />
       
       <main className="py-10">

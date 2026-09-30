@@ -14,7 +14,7 @@ export function BookingCard({ booking, onClick }: BookingCardProps) {
   
   return (
     <div 
-      className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 transition-all hover:shadow-md hover:border-blue-300 cursor-pointer"
+      className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover cursor-pointer"
       onClick={() => onClick(booking)}
     >
       <div className="p-4">
@@ -43,7 +43,7 @@ export function BookingCard({ booking, onClick }: BookingCardProps) {
           
           <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
             <div className="flex items-center text-xs text-gray-500">
-              <span className="truncate max-w-[120px]">By {booking.user?.name}</span>
+              <span className="truncate max-w-[120px]">By {booking.createdBy?.name || booking.createdBy?.email}</span>
             </div>
             {booking.attendees && booking.attendees.length > 0 && (
               <div className="flex items-center text-xs text-gray-500">

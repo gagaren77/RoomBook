@@ -5,33 +5,64 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import {
+  Bars3Icon,
+  XMarkIcon,
+  CalendarDaysIcon,
+  UserCircleIcon,
+  UsersIcon,
+  ArrowRightOnRectangleIcon,
+} from '@heroicons/react/24/outline';
 import { RoleBadge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+
+function initials(name?: string | null, email?: string | null) {
+  const source = (name || email || 'U').trim();
+  const parts = source.split(/[\s@.]+/).filter(Boolean);
+  return ((parts[0]?.[0] || 'U') + (parts.length > 1 ? parts[1][0] : '')).toUpperCase();
+}
 
 export function Navigation() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const isAdmin = session?.user?.role === 'ADMIN';
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
-    ...(session?.user?.role === 'ADMIN' ? [{ name: 'Campuses', href: '/campuses' }] : []),
-    { name: 'Rooms', href: '/rooms' },
     { name: 'Bookings', href: '/bookings' },
+    { name: 'Rooms', href: '/rooms' },
+    ...(isAdmin ? [{ name: 'Campuses', href: '/campuses' }, { name: 'Users', href: '/admin/users' }] : []),
   ];
 
+  const avatar = (size: string) => (
+    <div
+      className={cn(
+        'flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 font-semibold text-white shadow-sm',
+        size
+      )}
+    >
+      {initials(session?.user?.name, session?.user?.email)}
+    </div>
+  );
+
   return (
-    <Disclosure as="nav" className="bg-white shadow-sm border-b border-gray-200">
+    <Disclosure
+      as="nav"
+      className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl"
+    >
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 justify-between">
-              <div className="flex">
-                <div className="flex flex-shrink-0 items-center">
-                  <CalendarDaysIcon className="h-8 w-8 text-blue-600" />
-                  <span className="ml-2 text-xl font-bold text-gray-900">School Room Booking</span>
-                </div>
-                <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
+            <div className="flex h-16 items-center justify-between">
+              <div className="flex items-center gap-8">
+                <Link href="/dashboard" className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-600/30">
+                    <CalendarDaysIcon className="h-5 w-5" />
+                  </span>
+                  <span className="text-base font-bold tracking-tight text-slate-900">RoomBook</span>
+                </Link>
+
+                <div className="hidden items-center gap-1 sm:flex">
                   {navigation.map((item) => {
                     const isActive = pathname?.startsWith(item.href);
                     return (
@@ -39,10 +70,10 @@ export function Navigation() {
                         key={item.name}
                         href={item.href}
                         className={cn(
+                          'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                           isActive
-                            ? 'border-blue-500 text-gray-900'
-                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-                          'inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium'
+                            ? 'bg-indigo-50 text-indigo-700'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                         )}
                       >
                         {item.name}
@@ -51,40 +82,71 @@ export function Navigation() {
                   })}
                 </div>
               </div>
-              <div className="hidden sm:ml-6 sm:flex sm:items-center">
-                <Menu as="div" className="relative ml-3">
-                  <div>
-                    <Menu.Button className="flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                      <span className="sr-only">Open user menu</span>
-                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-                        {session?.user?.name?.[0] || 'U'}
-                      </div>
-                    </Menu.Button>
-                  </div>
+
+              <div className="hidden sm:flex sm:items-center">
+                <Menu as="div" className="relative">
+                  <Menu.Button className="flex items-center gap-2 rounded-full p-1 pr-3 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25">
+                    {avatar('h-8 w-8 text-xs')}
+                    <span className="max-w-[140px] truncate text-sm font-medium text-slate-700">
+                      {session?.user?.name || session?.user?.email}
+                    </span>
+                  </Menu.Button>
                   <Transition
                     as={Fragment}
-                    enter="transition ease-out duration-200"
+                    enter="transition ease-out duration-150"
                     enterFrom="transform opacity-0 scale-95"
                     enterTo="transform opacity-100 scale-100"
-                    leave="transition ease-in duration-75"
+                    leave="transition ease-in duration-100"
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                      <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.name}</p>
-                        <p className="text-sm text-gray-500 truncate mb-1">{session?.user?.email}</p>
+                    <Menu.Items className="absolute right-0 z-40 mt-2 w-64 origin-top-right rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-slate-900/5 focus:outline-none">
+                      <div className="px-3 py-3">
+                        <p className="truncate text-sm font-semibold text-slate-900">{session?.user?.name}</p>
+                        <p className="mb-2 truncate text-xs text-slate-500">{session?.user?.email}</p>
                         <RoleBadge role={session?.user?.role || 'USER'} />
                       </div>
+                      <div className="my-1 border-t border-slate-100" />
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            href="/profile"
+                            className={cn(
+                              'flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-slate-700',
+                              active && 'bg-slate-100'
+                            )}
+                          >
+                            <UserCircleIcon className="h-5 w-5 text-slate-400" />
+                            My profile
+                          </Link>
+                        )}
+                      </Menu.Item>
+                      {isAdmin && (
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              href="/admin/users"
+                              className={cn(
+                                'flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-slate-700',
+                                active && 'bg-slate-100'
+                              )}
+                            >
+                              <UsersIcon className="h-5 w-5 text-slate-400" />
+                              Manage users
+                            </Link>
+                          )}
+                        </Menu.Item>
+                      )}
                       <Menu.Item>
                         {({ active }) => (
                           <button
                             onClick={() => signOut({ callbackUrl: '/login' })}
                             className={cn(
-                              active ? 'bg-gray-100' : '',
-                              'block w-full text-left px-4 py-2 text-sm text-gray-700'
+                              'flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-slate-700',
+                              active && 'bg-slate-100'
                             )}
                           >
+                            <ArrowRightOnRectangleIcon className="h-5 w-5 text-slate-400" />
                             Sign out
                           </button>
                         )}
@@ -93,21 +155,18 @@ export function Navigation() {
                   </Transition>
                 </Menu>
               </div>
-              <div className="-mr-2 flex items-center sm:hidden">
-                <Disclosure.Button className="inline-flex items-center justify-center rounded-md bg-white p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+
+              <div className="flex items-center sm:hidden">
+                <Disclosure.Button className="inline-flex items-center justify-center rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25">
                   <span className="sr-only">Open main menu</span>
-                  {open ? (
-                    <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
-                  ) : (
-                    <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
-                  )}
+                  {open ? <XMarkIcon className="block h-6 w-6" /> : <Bars3Icon className="block h-6 w-6" />}
                 </Disclosure.Button>
               </div>
             </div>
           </div>
 
-          <Disclosure.Panel className="sm:hidden">
-            <div className="space-y-1 pb-3 pt-2">
+          <Disclosure.Panel className="border-t border-slate-100 sm:hidden">
+            <div className="space-y-1 px-3 py-3">
               {navigation.map((item) => {
                 const isActive = pathname?.startsWith(item.href);
                 return (
@@ -116,10 +175,8 @@ export function Navigation() {
                     as={Link}
                     href={item.href}
                     className={cn(
-                      isActive
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800',
-                      'block border-l-4 py-2 pl-3 pr-4 text-base font-medium'
+                      'block rounded-xl px-3 py-2.5 text-base font-medium',
+                      isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'
                     )}
                   >
                     {item.name}
@@ -127,24 +184,26 @@ export function Navigation() {
                 );
               })}
             </div>
-            <div className="border-t border-gray-200 pb-3 pt-4">
-              <div className="flex items-center px-4">
-                <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-                    {session?.user?.name?.[0] || 'U'}
-                  </div>
-                </div>
-                <div className="ml-3">
-                  <div className="text-base font-medium text-gray-800">{session?.user?.name}</div>
-                  <div className="text-sm font-medium text-gray-500">{session?.user?.email}</div>
-                  <div className="mt-1"><RoleBadge role={session?.user?.role || 'USER'} /></div>
+            <div className="border-t border-slate-100 px-4 py-4">
+              <div className="flex items-center gap-3">
+                {avatar('h-10 w-10 text-sm')}
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold text-slate-900">{session?.user?.name}</div>
+                  <div className="truncate text-xs text-slate-500">{session?.user?.email}</div>
                 </div>
               </div>
               <div className="mt-3 space-y-1">
                 <Disclosure.Button
+                  as={Link}
+                  href="/profile"
+                  className="block rounded-xl px-3 py-2 text-base font-medium text-slate-600 hover:bg-slate-100"
+                >
+                  My profile
+                </Disclosure.Button>
+                <Disclosure.Button
                   as="button"
                   onClick={() => signOut({ callbackUrl: '/login' })}
-                  className="block px-4 py-2 text-base font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 w-full text-left"
+                  className="block w-full rounded-xl px-3 py-2 text-left text-base font-medium text-slate-600 hover:bg-slate-100"
                 >
                   Sign out
                 </Disclosure.Button>

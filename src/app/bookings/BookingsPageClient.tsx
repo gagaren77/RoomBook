@@ -71,11 +71,7 @@ export function BookingsPageClient() {
       let url = '/api/bookings';
       const params = new URLSearchParams();
       if (selectedRoomId) params.append('roomId', selectedRoomId);
-      if (selectedCampusId && !selectedRoomId) {
-        // If campus is selected but not room, we'd need to fetch all rooms for campus and filter
-        // For simplicity in this UI, if they select a campus we just show all if no room selected
-        // In a real app, API should support ?campusId= filter directly on bookings
-      }
+      if (selectedCampusId) params.append('campusId', selectedCampusId);
       
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
@@ -144,7 +140,7 @@ export function BookingsPageClient() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || 'Something went wrong');
+        throw new Error(error.error || error.message || 'Something went wrong');
       }
 
       toast.success(isEditing ? 'Booking updated successfully' : 'Booking created successfully');
@@ -157,11 +153,11 @@ export function BookingsPageClient() {
 
   const canEditBooking = (booking: any) => {
     if (!booking) return false;
-    return isAdminOrScheduler || booking.userId === session?.user?.id;
+    return isAdminOrScheduler || booking.createdById === session?.user?.id;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Navigation />
       
       <main className="py-10">
@@ -169,17 +165,17 @@ export function BookingsPageClient() {
           <PageHeader
             title="Bookings"
             actions={
-              <div className="flex items-center space-x-4">
-                <div className="flex bg-white rounded-md shadow-sm border border-gray-200 p-0.5">
+              <div className="flex items-center gap-3">
+                <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
                   <button
                     onClick={() => setView('calendar')}
-                    className={`p-1.5 rounded-md ${view === 'calendar' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`rounded-lg p-2 transition ${view === 'calendar' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <CalendarDaysIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={() => setView('list')}
-                    className={`p-1.5 rounded-md ${view === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`rounded-lg p-2 transition ${view === 'list' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <ListBulletIcon className="h-5 w-5" />
                   </button>
@@ -192,11 +188,11 @@ export function BookingsPageClient() {
             }
           />
 
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="mb-6 grid grid-cols-1 gap-4 rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Campus</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Campus</label>
               <select
-                className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                className=""
                 value={selectedCampusId}
                 onChange={(e) => setSelectedCampusId(e.target.value)}
               >
@@ -207,9 +203,9 @@ export function BookingsPageClient() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Room</label>
               <select
-                className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                className=""
                 value={selectedRoomId}
                 onChange={(e) => setSelectedRoomId(e.target.value)}
                 disabled={!selectedCampusId}
@@ -230,7 +226,7 @@ export function BookingsPageClient() {
               isLoading={loading}
             />
           ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 min-h-[400px]">
+            <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-card min-h-[400px]">
               {loading ? (
                 <div className="flex justify-center py-12">
                   <LoadingSpinner className="h-8 w-8 text-blue-600" />

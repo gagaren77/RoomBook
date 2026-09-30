@@ -9,16 +9,17 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles = {
-  primary: 'bg-blue-600 text-white hover:bg-blue-700 border-transparent',
-  secondary: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
-  danger: 'bg-red-600 text-white hover:bg-red-700 border-transparent',
-  ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 border-transparent',
+  primary:
+    'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-sm shadow-indigo-600/25 hover:from-indigo-500 hover:to-indigo-700 border-transparent',
+  secondary: 'bg-white text-slate-700 border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300',
+  danger: 'bg-rose-600 text-white border-transparent shadow-sm shadow-rose-600/20 hover:bg-rose-700',
+  ghost: 'bg-transparent text-slate-600 border-transparent hover:bg-slate-100 hover:text-slate-900',
 };
 
 const sizeStyles = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg',
+  sm: 'px-3 py-1.5 text-sm gap-1.5',
+  md: 'px-4 py-2.5 text-sm gap-2',
+  lg: 'px-6 py-3 text-base gap-2',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -28,14 +29,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          'inline-flex items-center justify-center border font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+          'inline-flex items-center justify-center rounded-xl border font-semibold transition-all duration-150',
+          'focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25 active:scale-[0.98]',
+          'disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100',
           variantStyles[variant],
           sizeStyles[size],
           className
         )}
         {...props}
       >
-        {loading && <LoadingSpinner className="w-4 h-4 mr-2" />}
+        {loading && <LoadingSpinner className="h-4 w-4" />}
         {children}
       </button>
     );

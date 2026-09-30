@@ -93,7 +93,7 @@ export function RoomsPageClient() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || 'Something went wrong');
+        throw new Error(error.error || error.message || 'Something went wrong');
       }
 
       toast.success(isEditing ? 'Room updated successfully' : 'Room created successfully');
@@ -114,7 +114,7 @@ export function RoomsPageClient() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || 'Something went wrong');
+        throw new Error(error.error || error.message || 'Something went wrong');
       }
 
       toast.success('Room deleted successfully');
@@ -125,7 +125,7 @@ export function RoomsPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Navigation />
       
       <main className="py-10">
