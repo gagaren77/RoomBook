@@ -10,12 +10,9 @@ import { Input } from '@/components/ui/Input';
 
 export function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = emailState;
-  const [password, setPassword] = passwordState;
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const emailState = useState('');
-  const passwordState = useState('');
 
   const handleOktaSignIn = () => {
     signIn('okta', { callbackUrl: '/dashboard' });
@@ -96,8 +93,8 @@ export function LoginForm() {
               autoComplete="email"
               required
               label="Email address"
-              value={emailState[0]}
-              onChange={(e) => emailState[1](e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
 
             <Input
@@ -107,8 +104,8 @@ export function LoginForm() {
               autoComplete="current-password"
               required
               label="Password"
-              value={passwordState[0]}
-              onChange={(e) => passwordState[1](e.target.value)}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
 
             <div>

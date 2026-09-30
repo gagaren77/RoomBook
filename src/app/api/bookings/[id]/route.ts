@@ -145,7 +145,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     if (existingBooking.outlookEventId) {
       try {
-        await cancelOutlookEvent(existingBooking.outlookEventId);
+        await cancelOutlookEvent(existingBooking.outlookEventId, existingBooking.createdBy.email);
       } catch (e) {
         console.error('Failed to cancel Outlook event:', e);
       }
