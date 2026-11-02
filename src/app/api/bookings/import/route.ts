@@ -179,7 +179,6 @@ export async function POST(req: Request) {
           attendees: [],
           status: 'CONFIRMED' as const,
         })),
-        skipDuplicates: true,
       });
     }
 
@@ -199,7 +198,7 @@ export async function POST(req: Request) {
       await prisma.$transaction(
         part.map((s) =>
           prisma.booking.update({
-            where: { importKey: s.importKey },
+            where: { id: existing.get(s.importKey)!.id },
             data: { ...data(s), status: 'CONFIRMED' },
           })
         )

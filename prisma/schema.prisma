@@ -36,7 +36,7 @@ model User {
 model Campus {
   id        String   @id @default(cuid())
   /// CampusID used in schedule imports (e.g. "Chicago", "LaSalle")
-  code      String?  @unique
+  code      String?
   name      String
   timeZone  String   @default("America/Chicago")
   address   String
@@ -51,6 +51,8 @@ model Campus {
   updatedAt DateTime @updatedAt
 
   rooms     Room[]
+
+  @@index([code])
 }
 
 model Room {
@@ -93,7 +95,7 @@ model Booking {
   sessionId      String?
   timeSlots      String?
   /// Stable key for re-imports: TermID|CourseID|SectionID|SessionID|date
-  importKey      String?       @unique
+  importKey      String?
 
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -102,6 +104,7 @@ model Booking {
   createdBy      User          @relation(fields: [createdById], references: [id])
 
   @@index([termId])
+  @@index([importKey])
 }
 
 model Account {

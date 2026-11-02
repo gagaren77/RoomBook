@@ -67,17 +67,15 @@ export const CAMPUSES = [
 
 type CampusClient = {
   campus: {
-    upsert: (args: any) => Promise<any>;
+    findFirst: (args: any) => Promise<any>;
+    create: (args: any) => Promise<any>;
   };
 };
 
 /** Create any of the campuses above that are missing (matched by code). Existing rows are left as edited. */
 export async function ensureCampuses(prisma: CampusClient) {
   for (const c of CAMPUSES) {
-    await prisma.campus.upsert({
-      where: { code: c.code },
-      update: {},
-      create: { ...c },
-    });
+    const existing = await prisma.campus.findFirst({ where: { code: c.code } });
+    if (!existing) await prisma.campus.create({ data: { ...c } });
   }
 }
