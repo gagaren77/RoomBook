@@ -17,6 +17,8 @@ export function CampusForm({ initialData, onSubmit, onCancel }: CampusFormProps)
   
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
+    code: initialData?.code || '',
+    timeZone: initialData?.timeZone || 'America/Chicago',
     address: initialData?.address || '',
     city: initialData?.city || '',
     state: initialData?.state || '',
@@ -26,7 +28,7 @@ export function CampusForm({ initialData, onSubmit, onCancel }: CampusFormProps)
     lng: initialData?.lng?.toString() || '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -57,6 +59,25 @@ export function CampusForm({ initialData, onSubmit, onCancel }: CampusFormProps)
         placeholder="e.g. Main Campus"
       />
       
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          label="CampusID (import code)"
+          name="code"
+          value={formData.code}
+          onChange={handleChange}
+          placeholder="e.g. LaSalle"
+        />
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">Time zone</label>
+          <select name="timeZone" value={formData.timeZone} onChange={handleChange}>
+            <option value="America/Chicago">Central (Chicago)</option>
+            <option value="America/New_York">Eastern (New York)</option>
+            <option value="America/Denver">Mountain (Denver)</option>
+            <option value="America/Los_Angeles">Pacific (Los Angeles)</option>
+          </select>
+        </div>
+      </div>
+
       <Input
         label="Address"
         name="address"

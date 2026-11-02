@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, address, city, state, zipCode, phone, lat, lng } = body;
+    const { name, address, city, state, zipCode, phone, lat, lng, code, timeZone } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -49,7 +49,9 @@ export async function POST(req: Request) {
         zipCode: zipCode || '',
         phone,
         lat,
-        lng
+        lng,
+        code: code ? String(code).trim() : null,
+        ...(timeZone ? { timeZone: String(timeZone).trim() } : {})
       }
     });
 

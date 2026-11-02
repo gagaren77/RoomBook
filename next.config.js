@@ -8,7 +8,7 @@ const nextConfig = {
   },
   // Allow large page data for calendar
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs'],
+    serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs', 'exceljs'],
   },
 };
 

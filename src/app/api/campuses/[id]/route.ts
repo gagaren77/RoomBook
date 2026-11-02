@@ -51,6 +51,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.lat !== undefined || body.latitude !== undefined) data.lat = toNumber(body.lat ?? body.latitude);
     if (body.lng !== undefined || body.longitude !== undefined) data.lng = toNumber(body.lng ?? body.longitude);
     if (body.isActive !== undefined) data.isActive = Boolean(body.isActive);
+    if (body.code !== undefined) data.code = body.code ? String(body.code).trim() : null;
+    if (body.timeZone) data.timeZone = String(body.timeZone).trim();
 
     if (data.name === '') {
       return NextResponse.json({ error: 'Campus name is required' }, { status: 400 });

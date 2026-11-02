@@ -21,6 +21,7 @@ An enterprise-ready room and resource scheduling web application designed for mu
 8. [User Roles Explanation](#8-user-roles-explanation)
 9. [Sending Invites (Graph API vs. ICS Fallback)](#9-sending-invites-graph-api-vs-ics-fallback)
 10. [Adding Campuses and Rooms](#10-adding-campuses-and-rooms)
+11. [Schedule Import / Export](#11-schedule-import--export)
 
 ---
 
@@ -323,7 +324,9 @@ The application enforces Role-Based Access Control (RBAC) defined in the Prisma 
 |---|---|
 | `ADMIN` | **Full Platform Authority**: Can create, edit, and deactivate campuses, buildings, and rooms; view and edit all bookings across all campuses; manage user accounts and assign user roles (`ADMIN`, `SCHEDULER`, `INSTRUCTOR`); configure system-wide integrations. |
 | `SCHEDULER` | **Campus-Wide Scheduling Authority**: Can view availability across all campuses; create, modify, or cancel bookings on behalf of any instructor or department; resolve scheduling conflicts; dispatch calendar invitations and reminders. Cannot alter campus structures or manage user credentials. |
-| `INSTRUCTOR` | **Faculty & Staff Access**: Can browse room availability across campuses; create bookings for assigned classes, exams, or meetings; manage, reschedule, and cancel their own bookings; invite attendees. Cannot modify bookings created by others or access administrative configuration. |
+| `INSTRUCTOR` | **Read-only**: Can view the booking calendar and the room availability grid, filtered by campus and room. Cannot create, edit, cancel, import or export bookings. |
+
+Only `ADMIN` and `SCHEDULER` can create, edit and cancel bookings, and import or export the course schedule (see [Schedule Import / Export](#11-schedule-import--export)).
 
 **Provisioning Flow**:
 When a user logs in via Okta SSO for the first time, an account is automatically created in the database with the default role `INSTRUCTOR`. An `ADMIN` can subsequently elevate the user's role to `SCHEDULER` or `ADMIN`.
@@ -425,3 +428,45 @@ npm run db:seed
 
 ## License
 Proprietary — Internal educational software for Midwestern Career College. All rights reserved.
+
+---
+
+## 11. Schedule Import / Export
+
+Admins and schedulers see an **Import / Export** button on the Bookings page.
+
+**File layout** (CSV or `.xlsx`; the first sheet that has these headers is used):
+
+| Column | Example | Used for |
+|---|---|---|
+| `SessionDate` | `10/13/2026` | Day of the class session |
+| `CampusID` | `Chicago` | Campus code (see below) |
+| `TermID` | `BUSA2608CM1` | Stored on the booking |
+| `CourseID` | `ACCT100` | Booking title (`ACCT100 – Financial Accounting`) |
+| `SectionID` | `2` | Stored on the booking |
+| `CourseName` | `Financial Accounting` | Booking title |
+| `SessionID` | `15` | Stored on the booking |
+| `TimeSlots` | `Tu/Th 9:00a-12:00p` | Start/end time. The segment whose day matches `SessionDate` is used. |
+| `RoomID` | `404` | Room name. Missing rooms are created under the campus. |
+
+Rules:
+- Rows whose `RoomID` contains `Online` or `Virtual` are skipped (not shown on the calendar). Blank rooms and placeholders such as `Clinical Site` are skipped too.
+- Times are read in the campus time zone (Central for Illinois, Eastern for Ohio).
+- Each session is identified by `TermID + CourseID + SectionID + SessionID + SessionDate`; uploading the same file again updates those bookings instead of duplicating them.
+- Upload shows a preview (counts, skipped rows, overlaps) before anything is saved.
+- Export downloads the same columns, filtered by the selected campus/room.
+
+**Campus codes** (seeded by `prisma/seed.ts` and created automatically on first import):
+
+| CampusID | Campus | Address |
+|---|---|---|
+| `LaSalle` | Chicago Main Campus | 203 N LaSalle St #1400, Chicago, IL 60601 |
+| `Chicago` | Chicago Downtown Campus | 100 S Wacker Dr LL1-50, Chicago, IL 60606 |
+| `Naperville` | Naperville Campus | 200 E 5th Ave #128, Naperville, IL 60563 |
+| `EvergreenPark` | Evergreen Park Campus | 9730 S Western Ave, Evergreen Park, IL 60805 |
+| `Cleveland` | Cleveland Campus | 7261 Engle Rd, Middleburg Heights, OH 44130 |
+| `Columbus` | Columbus Campus | 2780 Airport Dr, Columbus, OH 43219 |
+
+The code and time zone can be edited on the Campuses page.
+
+**Room availability grid**: the grid icon on the Bookings page shows one column per room for a campus and day. Free time is shaded green and booked sessions are filled in. Admins and schedulers can click a free slot to start a booking in that room.

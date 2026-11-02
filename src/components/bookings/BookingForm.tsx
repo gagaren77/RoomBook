@@ -11,6 +11,7 @@ interface BookingFormProps {
   onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
   preselectedDate?: Date;
+  preselectedRoom?: { id: string; campusId: string };
 }
 
 const COLORS = [
@@ -24,15 +25,15 @@ const COLORS = [
   '#64748b', // slate-500
 ];
 
-export function BookingForm({ initialData, onSubmit, onCancel, preselectedDate }: BookingFormProps) {
+export function BookingForm({ initialData, onSubmit, onCancel, preselectedDate, preselectedRoom }: BookingFormProps) {
   const [loading, setLoading] = useState(false);
   const [campuses, setCampuses] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
-    campusId: initialData?.room?.campusId || '',
-    roomId: initialData?.roomId || '',
+    campusId: initialData?.room?.campusId || preselectedRoom?.campusId || '',
+    roomId: initialData?.roomId || preselectedRoom?.id || '',
     date: initialData?.startTime ? format(new Date(initialData.startTime), 'yyyy-MM-dd') : preselectedDate ? format(preselectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
     startTime: initialData?.startTime ? format(new Date(initialData.startTime), 'HH:mm') : preselectedDate ? format(preselectedDate, 'HH:mm') : '09:00',
     endTime: initialData?.endTime ? format(new Date(initialData.endTime), 'HH:mm') : preselectedDate ? format(new Date(preselectedDate.getTime() + 60*60*1000), 'HH:mm') : '10:00',
