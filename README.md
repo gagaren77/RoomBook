@@ -22,6 +22,7 @@ An enterprise-ready room and resource scheduling web application designed for mu
 9. [Sending Invites (Graph API vs. ICS Fallback)](#9-sending-invites-graph-api-vs-ics-fallback)
 10. [Adding Campuses and Rooms](#10-adding-campuses-and-rooms)
 11. [Schedule Import / Export](#11-schedule-import--export)
+12. [Faster Deploys: Build the Image on GitHub](#12-faster-deploys-build-the-image-on-github)
 
 ---
 
@@ -470,3 +471,22 @@ Rules:
 The code and time zone can be edited on the Campuses page.
 
 **Room availability grid**: the grid icon on the Bookings page shows one column per room for a campus and day. Free time is shaded green and booked sessions are filled in. Admins and schedulers can click a free slot to start a booking in that room.
+
+---
+
+## 12. Faster Deploys: Build the Image on GitHub
+
+`.github/workflows/docker-image.yml` builds the Docker image on GitHub Actions:
+- **Pull requests:** build only, to check the image still builds.
+- **Pushes to `main`:** build and publish `ghcr.io/gagaren77/roombook:latest` and `:sha-<commit>`.
+
+`docker-compose.ghcr.yml` is the same stack, except that the app pulls that image instead of building on the server, so a deploy takes seconds.
+
+**Switching Coolify over (one time):**
+1. Merge to `main` and wait for the **Docker image** workflow to go green (repo → Actions).
+2. On GitHub, go to your profile → **Packages** → `roombook` → Package settings and make sure visibility is **Public**. If it's private, the server needs `docker login ghcr.io` with a token that has `read:packages`.
+3. In Coolify (app → General → Build pipeline), set **Docker compose location** to `/docker-compose.ghcr.yml`, then click Deploy.
+
+To roll back, set `IMAGE_TAG=sha-<commit>` in the app's environment variables and redeploy, or point Coolify back at `/docker-compose.yml`.
+
+**Optional auto-deploy:** add `COOLIFY_WEBHOOK_URL` (Coolify → app → Webhooks → Deploy Webhook) and `COOLIFY_TOKEN` (Coolify → Keys & Tokens → API tokens) as repository secrets. Each new image on `main` will then redeploy automatically.
