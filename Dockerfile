@@ -59,4 +59,6 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+# Apply additive schema changes before starting, so a deploy never runs new code
+# against old tables. (db push refuses destructive changes without a flag.)
+CMD ["sh", "-c", "./node_modules/.bin/prisma db push --skip-generate && node server.js"]

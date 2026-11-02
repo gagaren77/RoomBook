@@ -227,7 +227,7 @@ SMTP_FROM=School Booking System <noreply@school.edu>
 Click **Deploy** in the top right corner. Coolify will build the multi-stage Docker image and start the containers.
 
 ### Step 6: Run Database Initialization
-Once the containers are running, run the database migrations and seed script:
+The container runs `prisma db push` on every start, so new (additive) schema changes are applied automatically on deploy. To seed the default admin and campuses on a fresh database, run:
 1. In the Coolify dashboard, select the `app` container and open the **Terminal / Execute Command** tab.
 2. Run the initialization script:
    ```bash
