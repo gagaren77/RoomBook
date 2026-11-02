@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sendICSInvite } from '@/lib/ics';
 import { cancelOutlookEvent } from '@/lib/graph';
+import { canManageBookings } from '@/lib/permissions';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -50,8 +51,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    if (session.user.role === 'INSTRUCTOR' && existingBooking.createdById !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!canManageBookings(session.user.role)) {
+      return NextResponse.json({ error: 'Only admins and schedulers can change bookings' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -139,8 +140,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    if (session.user.role === 'INSTRUCTOR' && existingBooking.createdById !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!canManageBookings(session.user.role)) {
+      return NextResponse.json({ error: 'Only admins and schedulers can change bookings' }, { status: 403 });
     }
 
     if (existingBooking.outlookEventId) {

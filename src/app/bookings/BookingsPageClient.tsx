@@ -3,21 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
-import { PlusIcon, ListBulletIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ListBulletIcon, CalendarDaysIcon, ArrowsUpDownIcon, TableCellsIcon } from '@heroicons/react/24/outline';
 import { Navigation } from '@/components/layout/Navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { BookingCalendar } from '@/components/calendar/BookingCalendar';
+import { RoomAvailability } from '@/components/calendar/RoomAvailability';
 import { BookingCard } from '@/components/bookings/BookingCard';
 import { BookingModal } from '@/components/bookings/BookingModal';
 import { BookingDetailModal } from '@/components/bookings/BookingDetailModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ImportExportModal } from '@/components/bookings/ImportExportModal';
+import { canManageBookings } from '@/lib/permissions';
 
 export function BookingsPageClient() {
   const { data: session } = useSession();
-  const isAdminOrScheduler = session?.user?.role === 'ADMIN' || session?.user?.role === 'SCHEDULER';
+  const isAdminOrScheduler = canManageBookings(session?.user?.role);
   
-  const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [view, setView] = useState<'calendar' | 'rooms' | 'list'>('calendar');
   const [bookings, setBookings] = useState<any[]>([]);
   const [campuses, setCampuses] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
@@ -33,6 +36,11 @@ export function BookingsPageClient() {
   
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [preselectedRoom, setPreselectedRoom] = useState<{ id: string; campusId: string } | undefined>(undefined);
+  const [refreshKey, setRefreshKey] = useState(0);
+  // Visible calendar range; the calendar view only loads bookings in this window.
+  const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
 
   useEffect(() => {
     const fetchCampuses = async () => {
@@ -66,12 +74,19 @@ export function BookingsPageClient() {
   }, [selectedCampusId]);
 
   const fetchBookings = async () => {
+    setRefreshKey((k) => k + 1);
+    if (view === 'rooms') return;
     setLoading(true);
     try {
       let url = '/api/bookings';
       const params = new URLSearchParams();
       if (selectedRoomId) params.append('roomId', selectedRoomId);
       if (selectedCampusId) params.append('campusId', selectedCampusId);
+      if (view === 'calendar') {
+        if (!range) return;
+        params.append('start', range.start.toISOString());
+        params.append('end', range.end.toISOString());
+      }
       
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
@@ -89,17 +104,32 @@ export function BookingsPageClient() {
 
   useEffect(() => {
     fetchBookings();
-  }, [selectedCampusId, selectedRoomId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCampusId, selectedRoomId, view, range?.start.getTime(), range?.end.getTime()]);
+
+  // The room grid needs a campus; default to the first one.
+  useEffect(() => {
+    if (view === 'rooms' && !selectedCampusId && campuses.length) setSelectedCampusId(campuses[0].id);
+  }, [view, selectedCampusId, campuses]);
 
   const handleNewBooking = () => {
     setEditingBooking(null);
     setPreselectedDate(undefined);
+    setPreselectedRoom(undefined);
     setIsFormModalOpen(true);
   };
 
   const handleDateSelect = (start: Date) => {
     setEditingBooking(null);
     setPreselectedDate(start);
+    setPreselectedRoom(undefined);
+    setIsFormModalOpen(true);
+  };
+
+  const handleFreeSlotClick = (start: Date, room: { id: string }) => {
+    setEditingBooking(null);
+    setPreselectedDate(start);
+    setPreselectedRoom({ id: room.id, campusId: selectedCampusId });
     setIsFormModalOpen(true);
   };
 
@@ -151,10 +181,8 @@ export function BookingsPageClient() {
     }
   };
 
-  const canEditBooking = (booking: any) => {
-    if (!booking) return false;
-    return isAdminOrScheduler || booking.createdById === session?.user?.id;
-  };
+  // Only admins and schedulers can create, edit or cancel bookings; everyone else views.
+  const canEditBooking = (booking: any) => !!booking && isAdminOrScheduler;
 
   return (
     <div className="min-h-screen">
@@ -169,9 +197,17 @@ export function BookingsPageClient() {
                 <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
                   <button
                     onClick={() => setView('calendar')}
+                    title="Calendar"
                     className={`rounded-lg p-2 transition ${view === 'calendar' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <CalendarDaysIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => setView('rooms')}
+                    title="Room availability"
+                    className={`rounded-lg p-2 transition ${view === 'rooms' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    <TableCellsIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={() => setView('list')}
@@ -180,10 +216,18 @@ export function BookingsPageClient() {
                     <ListBulletIcon className="h-5 w-5" />
                   </button>
                 </div>
-                <Button onClick={handleNewBooking}>
-                  <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-                  New Booking
-                </Button>
+                {isAdminOrScheduler && (
+                  <>
+                    <Button variant="secondary" onClick={() => setIsImportOpen(true)}>
+                      <ArrowsUpDownIcon className="-ml-1 h-5 w-5" />
+                      Import / Export
+                    </Button>
+                    <Button onClick={handleNewBooking}>
+                      <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+                      New Booking
+                    </Button>
+                  </>
+                )}
               </div>
             }
           />
@@ -218,11 +262,22 @@ export function BookingsPageClient() {
             </div>
           </div>
 
-          {view === 'calendar' ? (
+          {view === 'rooms' ? (
+            <RoomAvailability
+              campus={campuses.find((c) => c.id === selectedCampusId) || null}
+              rooms={rooms}
+              roomId={selectedRoomId}
+              onEventClick={handleEventClick}
+              onFreeSlotClick={isAdminOrScheduler ? handleFreeSlotClick : undefined}
+              refreshKey={refreshKey}
+            />
+          ) : view === 'calendar' ? (
             <BookingCalendar
               bookings={bookings}
               onEventClick={handleEventClick}
-              onDateSelect={handleDateSelect}
+              onDateSelect={isAdminOrScheduler ? handleDateSelect : undefined}
+              selectable={isAdminOrScheduler}
+              onRangeChange={(start, end) => setRange({ start, end })}
               isLoading={loading}
             />
           ) : (
@@ -251,12 +306,23 @@ export function BookingsPageClient() {
         </div>
       </main>
 
+      {isAdminOrScheduler && (
+        <ImportExportModal
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+          onImported={fetchBookings}
+          campusId={selectedCampusId}
+          roomId={selectedRoomId}
+        />
+      )}
+
       <BookingModal
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
         initialData={editingBooking}
         onSubmit={handleFormSubmit}
         preselectedDate={preselectedDate}
+        preselectedRoom={preselectedRoom}
       />
 
       <BookingDetailModal

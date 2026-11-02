@@ -8,9 +8,10 @@ interface BookingModalProps {
   initialData?: any;
   onSubmit: (data: any) => Promise<void>;
   preselectedDate?: Date;
+  preselectedRoom?: { id: string; campusId: string };
 }
 
-export function BookingModal({ isOpen, onClose, initialData, onSubmit, preselectedDate }: BookingModalProps) {
+export function BookingModal({ isOpen, onClose, initialData, onSubmit, preselectedDate, preselectedRoom }: BookingModalProps) {
   return (
     <Modal
       isOpen={isOpen}
@@ -23,6 +24,7 @@ export function BookingModal({ isOpen, onClose, initialData, onSubmit, preselect
         onSubmit={onSubmit}
         onCancel={onClose}
         preselectedDate={preselectedDate}
+        preselectedRoom={preselectedRoom}
       />
     </Modal>
   );

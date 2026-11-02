@@ -10,7 +10,8 @@ import {
   MapPinIcon, 
   UserIcon, 
   UsersIcon,
-  EnvelopeIcon 
+  EnvelopeIcon,
+  AcademicCapIcon
 } from '@heroicons/react/24/outline';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
@@ -77,6 +78,27 @@ export function BookingDetailModal({ isOpen, onClose, booking, canEdit, onEdit, 
               </div>
             </div>
             
+            {(booking.courseId || booking.termId) && (
+              <div className="flex items-start text-sm text-gray-600">
+                <AcademicCapIcon className="mr-2 h-5 w-5 text-gray-400" />
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {[booking.courseId, booking.courseName].filter(Boolean).join(' – ')}
+                  </p>
+                  <p>
+                    {[
+                      booking.termId && `Term ${booking.termId}`,
+                      booking.sectionId && `Section ${booking.sectionId}`,
+                      booking.sessionId && `Session ${booking.sessionId}`,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                  {booking.timeSlots && <p className="text-xs text-gray-500">{booking.timeSlots}</p>}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-start text-sm text-gray-600">
               <UserIcon className="mr-2 h-5 w-5 text-gray-400" />
               <span>Created by {booking.createdBy?.name || booking.createdBy?.email}</span>
@@ -127,10 +149,12 @@ export function BookingDetailModal({ isOpen, onClose, booking, canEdit, onEdit, 
             )}
           </div>
           <div className="flex space-x-3">
-            <Button variant="secondary" onClick={handleSendInvites} loading={sendingInvites}>
-              <EnvelopeIcon className="mr-2 h-4 w-4" />
-              Send Invites
-            </Button>
+            {canEdit && (
+              <Button variant="secondary" onClick={handleSendInvites} loading={sendingInvites}>
+                <EnvelopeIcon className="mr-2 h-4 w-4" />
+                Send Invites
+              </Button>
+            )}
             <Button variant="primary" onClick={onClose}>
               Close
             </Button>

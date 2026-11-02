@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sendICSInvite } from '@/lib/ics';
 import { sendOutlookInvite } from '@/lib/graph';
+import { canManageBookings } from '@/lib/permissions';
 
 export async function GET(req: Request) {
   try {
@@ -18,6 +19,7 @@ export async function GET(req: Request) {
     const start = searchParams.get('start');
     const end = searchParams.get('end');
     const mine = searchParams.get('mine');
+    const termId = searchParams.get('termId');
 
     const includeCancelled = searchParams.get('includeCancelled') === 'true';
 
@@ -26,6 +28,7 @@ export async function GET(req: Request) {
 
     if (roomId) whereClause.roomId = roomId;
     if (campusId) whereClause.room = { campusId };
+    if (termId) whereClause.termId = termId;
     if (mine === 'true') whereClause.createdById = session.user.id;
     
     if (start || end) {
@@ -61,6 +64,9 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!canManageBookings(session.user.role)) {
+      return NextResponse.json({ error: 'Only admins and schedulers can create bookings' }, { status: 403 });
     }
 
     const body = await req.json();

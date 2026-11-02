@@ -10,11 +10,14 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 interface BookingCalendarProps {
   bookings: any[];
   onEventClick: (booking: any) => void;
-  onDateSelect: (start: Date, end: Date) => void;
+  onDateSelect?: (start: Date, end: Date) => void;
+  onRangeChange?: (start: Date, end: Date) => void;
+  /** When false the calendar is view-only (no click-to-book). */
+  selectable?: boolean;
   isLoading?: boolean;
 }
 
-export function BookingCalendar({ bookings, onEventClick, onDateSelect, isLoading }: BookingCalendarProps) {
+export function BookingCalendar({ bookings, onEventClick, onDateSelect, onRangeChange, selectable = true, isLoading }: BookingCalendarProps) {
   
   const events = bookings.map(booking => ({
     id: booking.id,
@@ -31,7 +34,7 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, isLoadin
   };
 
   const handleDateSelect = (info: any) => {
-    onDateSelect(info.start, info.end);
+    onDateSelect?.(info.start, info.end);
     let calendarApi = info.view.calendar;
     calendarApi.unselect();
   };
@@ -54,13 +57,15 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, isLoadin
           }}
           initialView="timeGridWeek"
           editable={false}
-          selectable={true}
+          selectable={selectable && !!onDateSelect}
           selectMirror={true}
           dayMaxEvents={true}
+          eventMaxStack={3}
           weekends={true}
           events={events}
           eventClick={handleEventClick}
           select={handleDateSelect}
+          datesSet={(info) => onRangeChange?.(info.start, info.end)}
           businessHours={{
             daysOfWeek: [1, 2, 3, 4, 5], // Monday - Friday
             startTime: '07:00', // 7am
