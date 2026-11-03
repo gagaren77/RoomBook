@@ -21,7 +21,8 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, onRangeC
   
   const events = bookings.map(booking => ({
     id: booking.id,
-    title: `${booking.title} (${booking.room?.name})`,
+    // Imported sessions show only their TermID; the full details are in the click modal.
+    title: booking.termId || booking.title,
     start: booking.startTime,
     end: booking.endTime,
     backgroundColor: booking.color || '#6366f1',
@@ -61,6 +62,12 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, onRangeC
           selectMirror={true}
           dayMaxEvents={true}
           eventMaxStack={3}
+          eventClassNames="break-all"
+          views={{
+            dayGridMonth: { displayEventTime: false },
+            timeGridWeek: { displayEventTime: false },
+            timeGridDay: { displayEventTime: false },
+          }}
           weekends={true}
           events={events}
           eventClick={handleEventClick}
