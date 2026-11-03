@@ -6,6 +6,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { bookingLabel, programOf, programStyle } from '@/lib/programs';
 
 interface BookingCalendarProps {
   bookings: any[];
@@ -19,16 +20,20 @@ interface BookingCalendarProps {
 
 export function BookingCalendar({ bookings, onEventClick, onDateSelect, onRangeChange, selectable = true, isLoading }: BookingCalendarProps) {
   
-  const events = bookings.map(booking => ({
-    id: booking.id,
-    // Imported sessions show only their TermID; the full details are in the click modal.
-    title: booking.termId || booking.title,
-    start: booking.startTime,
-    end: booking.endTime,
-    backgroundColor: booking.color || '#6366f1',
-    borderColor: booking.color || '#6366f1',
-    extendedProps: { booking }
-  }));
+  const events = bookings.map(booking => {
+    const style = programStyle(programOf(booking));
+    return {
+      id: booking.id,
+      // Imported sessions show only their TermID; the full details are in the click modal.
+      title: bookingLabel(booking),
+      start: booking.startTime,
+      end: booking.endTime,
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderColor,
+      textColor: style.color,
+      extendedProps: { booking }
+    };
+  });
 
   const handleEventClick = (info: any) => {
     onEventClick(info.event.extendedProps.booking);
