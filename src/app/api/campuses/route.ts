@@ -10,10 +10,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Deleting a campus deactivates it (bookings keep their history), so hide inactive ones.
     const campuses = await prisma.campus.findMany({
+      where: { isActive: true },
       include: {
         _count: {
-          select: { rooms: true }
+          select: { rooms: { where: { isActive: true } } }
         }
       },
       orderBy: { name: 'asc' }

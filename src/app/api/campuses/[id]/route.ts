@@ -93,10 +93,17 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       );
     }
 
-    const campus = await prisma.campus.update({
-      where: { id: params.id },
-      data: { isActive: false }
-    });
+    // Soft delete: hide the campus and its rooms, keep past bookings intact.
+    const [campus] = await prisma.$transaction([
+      prisma.campus.update({
+        where: { id: params.id },
+        data: { isActive: false }
+      }),
+      prisma.room.updateMany({
+        where: { campusId: params.id },
+        data: { isActive: false }
+      })
+    ]);
 
     return NextResponse.json(campus);
   } catch (error) {
