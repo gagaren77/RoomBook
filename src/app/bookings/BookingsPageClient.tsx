@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { BookingCalendar } from '@/components/calendar/BookingCalendar';
 import { RoomAvailability } from '@/components/calendar/RoomAvailability';
 import { RoomTimetable } from '@/components/calendar/RoomTimetable';
+import { CampusOverview } from '@/components/calendar/CampusOverview';
 import { BookingCard } from '@/components/bookings/BookingCard';
 import { BookingModal } from '@/components/bookings/BookingModal';
 import { BookingDetailModal } from '@/components/bookings/BookingDetailModal';
@@ -142,11 +143,6 @@ export function BookingsPageClient() {
     fetchBookings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCampusId, selectedRoomId, view, range?.start.getTime(), range?.end.getTime()]);
-
-  // The room views need a campus; default to the first one.
-  useEffect(() => {
-    if ((view === 'rooms' || view === 'timetable') && !selectedCampusId && campuses.length) setSelectedCampusId(campuses[0].id);
-  }, [view, selectedCampusId, campuses]);
 
   const handleNewBooking = () => {
     setEditingBooking(null);
@@ -293,7 +289,10 @@ export function BookingsPageClient() {
             </div>
           </div>
 
-          {view === 'timetable' ? (
+          {(view === 'timetable' || view === 'rooms') && !selectedCampusId ? (
+            // "All Campuses" in a room view: one row per campus, click one to open its rooms.
+            <CampusOverview campuses={campuses} onPickCampus={setSelectedCampusId} />
+          ) : view === 'timetable' ? (
             <RoomTimetable
               campus={campuses.find((c) => c.id === selectedCampusId) || null}
               rooms={rooms}
