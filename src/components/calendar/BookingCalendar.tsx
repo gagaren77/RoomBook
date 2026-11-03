@@ -21,6 +21,7 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, onRangeC
   
   const events = bookings.map(booking => ({
     id: booking.id,
+    // Full text is used by the List view; the grid views show only the short label.
     title: `${booking.title} (${booking.room?.name})`,
     start: booking.startTime,
     end: booking.endTime,
@@ -28,6 +29,20 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, onRangeC
     borderColor: booking.color || '#6366f1',
     extendedProps: { booking }
   }));
+
+  // Keep calendar blocks compact: only the Term ID (or the title for bookings
+  // without one). Everything else is in the tooltip and the click-through details.
+  const renderEventContent = (arg: any) => {
+    const booking = arg.event.extendedProps.booking;
+    if (arg.view.type.startsWith('list')) return undefined; // default full row
+    const label = booking.termId || booking.title;
+    const tooltip = [booking.title, booking.room?.name, arg.timeText].filter(Boolean).join(' · ');
+    return (
+      <div className="h-full w-full overflow-hidden px-1 py-0.5 text-[11px] font-semibold leading-tight" title={tooltip}>
+        <span className="block break-all">{label}</span>
+      </div>
+    );
+  };
 
   const handleEventClick = (info: any) => {
     onEventClick(info.event.extendedProps.booking);
@@ -64,6 +79,7 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, onRangeC
           weekends={true}
           events={events}
           eventClick={handleEventClick}
+          eventContent={renderEventContent}
           select={handleDateSelect}
           datesSet={(info) => onRangeChange?.(info.start, info.end)}
           businessHours={{
