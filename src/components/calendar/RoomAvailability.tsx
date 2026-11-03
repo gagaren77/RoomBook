@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { toZoned, zonedTime, CalendarDate } from '@/lib/schedule';
+import { bookingColors } from '@/lib/programs';
+import { usePrograms } from '@/lib/use-programs';
 
 const DAY_START = 7 * 60; // 7:00
 const DAY_END = 22 * 60; // 22:00
@@ -48,6 +50,7 @@ export function RoomAvailability({ campus, rooms, roomId, onEventClick, onFreeSl
   const [day, setDay] = useState<CalendarDate>(() => todayIn(tz));
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const programs = usePrograms();
 
   const shownRooms = useMemo(() => (roomId ? rooms.filter((r) => r.id === roomId) : rooms), [rooms, roomId]);
 
@@ -142,7 +145,7 @@ export function RoomAvailability({ campus, rooms, roomId, onEventClick, onFreeSl
           <span className="inline-block h-3 w-3 rounded-sm border border-emerald-200 bg-emerald-50" /> Free
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-sm bg-indigo-500" /> Booked
+          <span className="inline-block h-3 w-3 rounded-sm bg-violet-200" /> Booked (colored by program)
         </span>
       </div>
 
@@ -206,6 +209,7 @@ export function RoomAvailability({ campus, rooms, roomId, onEventClick, onFreeSl
                       const top = Math.max(start, DAY_START) - DAY_START;
                       const bottom = Math.min(end, DAY_END) - DAY_START;
                       if (bottom <= 0 || top >= visible) return null;
+                      const c = bookingColors(b, programs);
                       return (
                         <button
                           key={b.id}
@@ -213,9 +217,10 @@ export function RoomAvailability({ campus, rooms, roomId, onEventClick, onFreeSl
                           style={{
                             top: (top / SLOT) * ROW_PX,
                             height: Math.max(((bottom - top) / SLOT) * ROW_PX - 2, 14),
-                            backgroundColor: b.color || '#6366f1',
+                            backgroundColor: c.bg,
+                            color: c.fg,
                           }}
-                          className="absolute inset-x-1 z-[5] overflow-hidden rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight text-white shadow-sm hover:opacity-90"
+                          className="absolute inset-x-1 z-[5] overflow-hidden rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm hover:brightness-95"
                           title={`${b.title}\n${label(start)} – ${label(end)}`}
                         >
                           <span className="block font-semibold">{b.courseId || b.title}</span>

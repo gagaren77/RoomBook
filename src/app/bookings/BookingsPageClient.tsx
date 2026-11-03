@@ -3,24 +3,28 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
-import { PlusIcon, ListBulletIcon, CalendarDaysIcon, ArrowsUpDownIcon, TableCellsIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ListBulletIcon, CalendarDaysIcon, ArrowsUpDownIcon, TableCellsIcon, ViewColumnsIcon } from '@heroicons/react/24/outline';
 import { Navigation } from '@/components/layout/Navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { BookingCalendar } from '@/components/calendar/BookingCalendar';
 import { RoomAvailability } from '@/components/calendar/RoomAvailability';
+import { RoomTimetable } from '@/components/calendar/RoomTimetable';
 import { BookingCard } from '@/components/bookings/BookingCard';
 import { BookingModal } from '@/components/bookings/BookingModal';
 import { BookingDetailModal } from '@/components/bookings/BookingDetailModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ImportExportModal } from '@/components/bookings/ImportExportModal';
 import { canManageBookings } from '@/lib/permissions';
+import { invalidatePrograms } from '@/lib/use-programs';
 
 export function BookingsPageClient() {
   const { data: session } = useSession();
   const isAdminOrScheduler = canManageBookings(session?.user?.role);
   
-  const [view, setView] = useState<'calendar' | 'rooms' | 'list'>('calendar');
+  // The timetable (rooms by day) is the main view; the week calendar, the
+  // room-by-hour grid and the list are the other tabs.
+  const [view, setView] = useState<'timetable' | 'calendar' | 'rooms' | 'list'>('timetable');
   const [bookings, setBookings] = useState<any[]>([]);
   const [campuses, setCampuses] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
@@ -75,7 +79,7 @@ export function BookingsPageClient() {
 
   const fetchBookings = async () => {
     setRefreshKey((k) => k + 1);
-    if (view === 'rooms') return;
+    if (view === 'rooms' || view === 'timetable') return; // those views load their own week or day
     setLoading(true);
     try {
       let url = '/api/bookings';
@@ -107,9 +111,9 @@ export function BookingsPageClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCampusId, selectedRoomId, view, range?.start.getTime(), range?.end.getTime()]);
 
-  // The room grid needs a campus; default to the first one.
+  // The room views need a campus; default to the first one.
   useEffect(() => {
-    if (view === 'rooms' && !selectedCampusId && campuses.length) setSelectedCampusId(campuses[0].id);
+    if ((view === 'rooms' || view === 'timetable') && !selectedCampusId && campuses.length) setSelectedCampusId(campuses[0].id);
   }, [view, selectedCampusId, campuses]);
 
   const handleNewBooking = () => {
@@ -196,21 +200,33 @@ export function BookingsPageClient() {
               <div className="flex items-center gap-3">
                 <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
                   <button
+                    onClick={() => setView('timetable')}
+                    title="Rooms by day"
+                    aria-label="Rooms by day"
+                    className={`rounded-lg p-2 transition ${view === 'timetable' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    <TableCellsIcon className="h-5 w-5" />
+                  </button>
+                  <button
                     onClick={() => setView('calendar')}
-                    title="Calendar"
+                    title="Week calendar"
+                    aria-label="Week calendar"
                     className={`rounded-lg p-2 transition ${view === 'calendar' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <CalendarDaysIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={() => setView('rooms')}
-                    title="Room availability"
+                    title="Rooms by hour"
+                    aria-label="Rooms by hour"
                     className={`rounded-lg p-2 transition ${view === 'rooms' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                   >
-                    <TableCellsIcon className="h-5 w-5" />
+                    <ViewColumnsIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={() => setView('list')}
+                    title="List"
+                    aria-label="List"
                     className={`rounded-lg p-2 transition ${view === 'list' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <ListBulletIcon className="h-5 w-5" />
@@ -262,7 +278,16 @@ export function BookingsPageClient() {
             </div>
           </div>
 
-          {view === 'rooms' ? (
+          {view === 'timetable' ? (
+            <RoomTimetable
+              campus={campuses.find((c) => c.id === selectedCampusId) || null}
+              rooms={rooms}
+              roomId={selectedRoomId}
+              onEventClick={handleEventClick}
+              onFreeSlotClick={isAdminOrScheduler ? handleFreeSlotClick : undefined}
+              refreshKey={refreshKey}
+            />
+          ) : view === 'rooms' ? (
             <RoomAvailability
               campus={campuses.find((c) => c.id === selectedCampusId) || null}
               rooms={rooms}
@@ -310,7 +335,10 @@ export function BookingsPageClient() {
         <ImportExportModal
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}
-          onImported={fetchBookings}
+          onImported={() => {
+            invalidatePrograms(); // an import may add a program
+            fetchBookings();
+          }}
           campusId={selectedCampusId}
           roomId={selectedRoomId}
         />
