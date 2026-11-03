@@ -111,6 +111,12 @@
   padding: 0.5rem;
 }
 
+.fc .fc-timegrid-more-link {
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 600;
+}
+
 .fc .fc-event {
   border-radius: 0.5rem;
   border: none;
