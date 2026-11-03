@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { ensureCampuses } from '../src/lib/campuses';
+import { ensureCampuses } from './campuses';
 
 const prisma = new PrismaClient();
 
