@@ -18,13 +18,45 @@ import { ImportExportModal } from '@/components/bookings/ImportExportModal';
 import { canManageBookings } from '@/lib/permissions';
 import { invalidatePrograms } from '@/lib/use-programs';
 
+type BookingsView = 'timetable' | 'rooms' | 'calendar' | 'list';
+const VIEW_KEY = 'roombook.bookingsView';
+const VIEWS: { id: BookingsView; label: string; title: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'timetable', label: 'Rooms by day', title: 'One row per room, one column per weekday', Icon: TableCellsIcon },
+  { id: 'rooms', label: 'Room timeline', title: 'One day: one row per room, time left to right', Icon: ViewColumnsIcon },
+  { id: 'calendar', label: 'Week', title: 'Classic week calendar', Icon: CalendarDaysIcon },
+  { id: 'list', label: 'List', title: 'All bookings as cards', Icon: ListBulletIcon },
+];
+
 export function BookingsPageClient() {
   const { data: session } = useSession();
   const isAdminOrScheduler = canManageBookings(session?.user?.role);
   
-  // The timetable (rooms by day) is the main view; the week calendar, the
-  // room-by-hour grid and the list are the other tabs.
-  const [view, setView] = useState<'timetable' | 'calendar' | 'rooms' | 'list'>('timetable');
+  // Each user picks how to see the calendar; the last choice is remembered in
+  // this browser. Rooms by day is the default.
+  const [view, setView] = useState<BookingsView>('timetable');
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(VIEW_KEY) as BookingsView | null;
+      if (saved && VIEWS.some((v) => v.id === saved)) setView(saved);
+    } catch {}
+  }, []);
+  const chooseView = (v: BookingsView) => {
+    setView(v);
+    try {
+      window.localStorage.setItem(VIEW_KEY, v);
+    } catch {}
+  };
+
+  // Programs hidden from the calendar views (legend chips), kept across views.
+  const [hiddenPrograms, setHiddenPrograms] = useState<Set<string>>(new Set());
+  const toggleProgram = (p: string) =>
+    setHiddenPrograms((prev) => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p);
+      else next.add(p);
+      return next;
+    });
+  const showAllPrograms = () => setHiddenPrograms(new Set());
   const [bookings, setBookings] = useState<any[]>([]);
   const [campuses, setCampuses] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
@@ -198,39 +230,22 @@ export function BookingsPageClient() {
             title="Bookings"
             actions={
               <div className="flex items-center gap-3">
-                <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-                  <button
-                    onClick={() => setView('timetable')}
-                    title="Rooms by day"
-                    aria-label="Rooms by day"
-                    className={`rounded-lg p-2 transition ${view === 'timetable' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    <TableCellsIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => setView('calendar')}
-                    title="Week calendar"
-                    aria-label="Week calendar"
-                    className={`rounded-lg p-2 transition ${view === 'calendar' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    <CalendarDaysIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => setView('rooms')}
-                    title="Rooms by hour"
-                    aria-label="Rooms by hour"
-                    className={`rounded-lg p-2 transition ${view === 'rooms' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    <ViewColumnsIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => setView('list')}
-                    title="List"
-                    aria-label="List"
-                    className={`rounded-lg p-2 transition ${view === 'list' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    <ListBulletIcon className="h-5 w-5" />
-                  </button>
+                <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Calendar view">
+                  {VIEWS.map(({ id, label, title, Icon }) => (
+                    <button
+                      key={id}
+                      role="tab"
+                      aria-selected={view === id}
+                      onClick={() => chooseView(id)}
+                      title={title}
+                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition ${
+                        view === id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="hidden md:inline">{label}</span>
+                    </button>
+                  ))}
                 </div>
                 {isAdminOrScheduler && (
                   <>
@@ -286,6 +301,9 @@ export function BookingsPageClient() {
               onEventClick={handleEventClick}
               onFreeSlotClick={isAdminOrScheduler ? handleFreeSlotClick : undefined}
               refreshKey={refreshKey}
+              hiddenPrograms={hiddenPrograms}
+              onToggleProgram={toggleProgram}
+              onShowAllPrograms={showAllPrograms}
             />
           ) : view === 'rooms' ? (
             <RoomAvailability
@@ -295,6 +313,9 @@ export function BookingsPageClient() {
               onEventClick={handleEventClick}
               onFreeSlotClick={isAdminOrScheduler ? handleFreeSlotClick : undefined}
               refreshKey={refreshKey}
+              hiddenPrograms={hiddenPrograms}
+              onToggleProgram={toggleProgram}
+              onShowAllPrograms={showAllPrograms}
             />
           ) : view === 'calendar' ? (
             <BookingCalendar
@@ -304,6 +325,9 @@ export function BookingsPageClient() {
               selectable={isAdminOrScheduler}
               onRangeChange={(start, end) => setRange({ start, end })}
               isLoading={loading}
+              hiddenPrograms={hiddenPrograms}
+              onToggleProgram={toggleProgram}
+              onShowAllPrograms={showAllPrograms}
             />
           ) : (
             <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-card min-h-[400px]">

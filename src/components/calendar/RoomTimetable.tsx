@@ -4,8 +4,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { toZoned, zonedTime, CalendarDate } from '@/lib/schedule';
-import { bookingColors, programColor, programOf } from '@/lib/programs';
+import { bookingColors, programOf } from '@/lib/programs';
 import { usePrograms } from '@/lib/use-programs';
+import { ProgramLegend, countPrograms } from './ProgramLegend';
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DEFAULT_START = 9 * 60; // a free cell books at 9:00 AM
@@ -19,6 +20,9 @@ interface RoomTimetableProps {
   /** Managers only: click a free cell to start a booking that day. */
   onFreeSlotClick?: (start: Date, room: { id: string }) => void;
   refreshKey?: number;
+  hiddenPrograms: Set<string>;
+  onToggleProgram: (program: string) => void;
+  onShowAllPrograms: () => void;
 }
 
 type Cell = { b: any; start: number; end: number; program: string };
@@ -59,13 +63,26 @@ function monthDay(d: CalendarDate, withYear = false) {
   });
 }
 
-export function RoomTimetable({ campus, rooms, roomId, onEventClick, onFreeSlotClick, refreshKey }: RoomTimetableProps) {
+/**
+ * A week, one row per room and one column per day, like a school timetable.
+ * A room holds one class at a time, so nothing overlaps and free days show.
+ */
+export function RoomTimetable({
+  campus,
+  rooms,
+  roomId,
+  onEventClick,
+  onFreeSlotClick,
+  refreshKey,
+  hiddenPrograms,
+  onToggleProgram,
+  onShowAllPrograms,
+}: RoomTimetableProps) {
   const tz = campus?.timeZone || 'America/Chicago';
   const [weekStart, setWeekStart] = useState<CalendarDate>(() => mondayOf(toZoned(new Date(), tz).date));
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const allPrograms = usePrograms();
+  const programs = usePrograms();
 
   const today = toZoned(new Date(), tz).date;
   const shownRooms = useMemo(() => (roomId ? rooms.filter((r) => r.id === roomId) : rooms), [rooms, roomId]);
@@ -107,16 +124,7 @@ export function RoomTimetable({ campus, rooms, roomId, onEventClick, onFreeSlotC
     return map;
   }, [bookings, tz, weekStart]);
 
-  const programs = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const b of bookings) {
-      const p = programOf(b);
-      counts.set(p, (counts.get(p) || 0) + 1);
-    }
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([key, count]) => ({ key, count, color: programColor(key, allPrograms) }));
-  }, [bookings, allPrograms]);
+  const counts = useMemo(() => countPrograms(bookings), [bookings]);
 
   // Weekend columns only when something is booked on a weekend.
   const dayCount = useMemo(() => {
@@ -127,14 +135,6 @@ export function RoomTimetable({ campus, rooms, roomId, onEventClick, onFreeSlotC
     }
     return last + 1;
   }, [grid]);
-
-  const toggleProgram = (key: string) =>
-    setHidden((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
 
   if (!campus) {
     return (
@@ -170,32 +170,7 @@ export function RoomTimetable({ campus, rooms, roomId, onEventClick, onFreeSlotC
         </div>
       </div>
 
-      {programs.length > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-slate-500">Programs:</span>
-          {programs.map((p) => {
-            const off = hidden.has(p.key);
-            return (
-              <button
-                key={p.key}
-                type="button"
-                onClick={() => toggleProgram(p.key)}
-                aria-pressed={!off}
-                title={off ? `Show ${p.key}` : `Hide ${p.key}`}
-                style={off ? undefined : { backgroundColor: p.color.bg, color: p.color.fg }}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold transition ${
-                  off ? 'border-slate-200 bg-white text-slate-400 line-through' : 'border-transparent'
-                }`}
-              >
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: off ? '#cbd5e1' : p.color.dot }} />
-                {p.key}
-                <span className="font-normal opacity-70">{p.count}</span>
-              </button>
-            );
-          })}
-          <span className="text-slate-400">Click a program to hide or show it.</span>
-        </div>
-      )}
+      <ProgramLegend counts={counts} programs={programs} hidden={hiddenPrograms} onToggle={onToggleProgram} onShowAll={onShowAllPrograms} />
 
       {loading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/50">
@@ -233,8 +208,8 @@ export function RoomTimetable({ campus, rooms, roomId, onEventClick, onFreeSlotC
                     <th className="sticky left-0 z-10 bg-white px-2 py-2 text-sm font-semibold text-slate-900">{room.name}</th>
                     {Array.from({ length: dayCount }, (_, i) => {
                       const d = addDays(weekStart, i);
-                      const items = days[i].filter((c) => !hidden.has(c.program));
-                      const free = days[i].length === 0;
+                      const items = days[i];
+                      const free = items.length === 0;
                       return (
                         <td
                           key={i}
@@ -248,8 +223,11 @@ export function RoomTimetable({ campus, rooms, roomId, onEventClick, onFreeSlotC
                             <span className="block px-1 py-1.5 text-[11px] text-emerald-700">Free</span>
                           ) : (
                             <div className="flex flex-col gap-1">
-                              {items.map(({ b, start, end }) => {
-                                const c = bookingColors(b, allPrograms);
+                              {items.map(({ b, start, end, program }) => {
+                                if (hiddenPrograms.has(program)) {
+                                  return <div key={b.id} className="h-2 rounded-md bg-slate-200/80" title={`${program} (hidden)`} />;
+                                }
+                                const c = bookingColors(b, programs);
                                 return (
                                   <button
                                     key={b.id}
