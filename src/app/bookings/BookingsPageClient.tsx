@@ -1,42 +1,62 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
-import { PlusIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ListBulletIcon, CalendarDaysIcon, ArrowsUpDownIcon, TableCellsIcon, ViewColumnsIcon } from '@heroicons/react/24/outline';
 import { Navigation } from '@/components/layout/Navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { BookingCalendar } from '@/components/calendar/BookingCalendar';
 import { RoomAvailability } from '@/components/calendar/RoomAvailability';
-import { RoomWeekView, RoomTimelineView } from '@/components/calendar/RoomScheduleViews';
-import { ProgramLegend } from '@/components/calendar/ProgramLegend';
+import { RoomTimetable } from '@/components/calendar/RoomTimetable';
 import { BookingCard } from '@/components/bookings/BookingCard';
 import { BookingModal } from '@/components/bookings/BookingModal';
 import { BookingDetailModal } from '@/components/bookings/BookingDetailModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ImportExportModal } from '@/components/bookings/ImportExportModal';
 import { canManageBookings } from '@/lib/permissions';
-import { programOf } from '@/lib/programs';
+import { invalidatePrograms } from '@/lib/use-programs';
 
-type BookingsView = 'calendar' | 'week' | 'timeline' | 'rooms' | 'list';
-
-const VIEWS: { id: BookingsView; label: string; title: string }[] = [
-  { id: 'calendar', label: 'Calendar', title: 'Month, week or day calendar' },
-  { id: 'week', label: 'Rooms by day', title: 'Rooms as rows, weekdays as columns' },
-  { id: 'timeline', label: 'Timeline', title: 'One day, rooms as rows, time left to right' },
-  { id: 'rooms', label: 'Room grid', title: 'Room availability for one day' },
-  { id: 'list', label: 'List', title: 'All bookings as cards' },
+type BookingsView = 'timetable' | 'rooms' | 'calendar' | 'list';
+const VIEW_KEY = 'roombook.bookingsView';
+const VIEWS: { id: BookingsView; label: string; title: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'timetable', label: 'Rooms by day', title: 'One row per room, one column per weekday', Icon: TableCellsIcon },
+  { id: 'rooms', label: 'Room timeline', title: 'One day: one row per room, time left to right', Icon: ViewColumnsIcon },
+  { id: 'calendar', label: 'Week', title: 'Classic week calendar', Icon: CalendarDaysIcon },
+  { id: 'list', label: 'List', title: 'All bookings as cards', Icon: ListBulletIcon },
 ];
-
-const VIEW_STORAGE_KEY = 'roombook.bookingsView';
 
 export function BookingsPageClient() {
   const { data: session } = useSession();
   const isAdminOrScheduler = canManageBookings(session?.user?.role);
   
-  const [view, setView] = useState<BookingsView>('calendar');
-  const [hiddenPrograms, setHiddenPrograms] = useState<string[]>([]);
+  // Each user picks how to see the calendar; the last choice is remembered in
+  // this browser. Rooms by day is the default.
+  const [view, setView] = useState<BookingsView>('timetable');
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(VIEW_KEY) as BookingsView | null;
+      if (saved && VIEWS.some((v) => v.id === saved)) setView(saved);
+    } catch {}
+  }, []);
+  const chooseView = (v: BookingsView) => {
+    setView(v);
+    try {
+      window.localStorage.setItem(VIEW_KEY, v);
+    } catch {}
+  };
+
+  // Programs hidden from the calendar views (legend chips), kept across views.
+  const [hiddenPrograms, setHiddenPrograms] = useState<Set<string>>(new Set());
+  const toggleProgram = (p: string) =>
+    setHiddenPrograms((prev) => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p);
+      else next.add(p);
+      return next;
+    });
+  const showAllPrograms = () => setHiddenPrograms(new Set());
   const [bookings, setBookings] = useState<any[]>([]);
   const [campuses, setCampuses] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
@@ -57,28 +77,6 @@ export function BookingsPageClient() {
   const [refreshKey, setRefreshKey] = useState(0);
   // Visible calendar range; the calendar view only loads bookings in this window.
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
-  // Only the latest request may update the page when views switch quickly.
-  const fetchSeq = useRef(0);
-
-  // Each person's chosen view is remembered in this browser.
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(VIEW_STORAGE_KEY);
-      if (VIEWS.some((v) => v.id === saved)) setView(saved as BookingsView);
-    } catch {}
-  }, []);
-
-  const chooseView = (next: BookingsView) => {
-    setView(next);
-    try {
-      localStorage.setItem(VIEW_STORAGE_KEY, next);
-    } catch {}
-  };
-
-  const visibleBookings = useMemo(
-    () => bookings.filter((b) => !hiddenPrograms.includes(programOf(b))),
-    [bookings, hiddenPrograms]
-  );
 
   useEffect(() => {
     const fetchCampuses = async () => {
@@ -113,15 +111,14 @@ export function BookingsPageClient() {
 
   const fetchBookings = async () => {
     setRefreshKey((k) => k + 1);
-    if (view === 'rooms') return;
-    const seq = ++fetchSeq.current;
+    if (view === 'rooms' || view === 'timetable') return; // those views load their own week or day
     setLoading(true);
     try {
       let url = '/api/bookings';
       const params = new URLSearchParams();
       if (selectedRoomId) params.append('roomId', selectedRoomId);
       if (selectedCampusId) params.append('campusId', selectedCampusId);
-      if (view !== 'list') {
+      if (view === 'calendar') {
         if (!range) return;
         params.append('start', range.start.toISOString());
         params.append('end', range.end.toISOString());
@@ -133,11 +130,11 @@ export function BookingsPageClient() {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch bookings');
       const data = await res.json();
-      if (seq === fetchSeq.current) setBookings(data);
+      setBookings(data);
     } catch (error) {
       toast.error('Error loading bookings');
     } finally {
-      if (seq === fetchSeq.current) setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -148,7 +145,7 @@ export function BookingsPageClient() {
 
   // The room views need a campus; default to the first one.
   useEffect(() => {
-    if ((view === 'rooms' || view === 'week' || view === 'timeline') && !selectedCampusId && campuses.length) setSelectedCampusId(campuses[0].id);
+    if ((view === 'rooms' || view === 'timetable') && !selectedCampusId && campuses.length) setSelectedCampusId(campuses[0].id);
   }, [view, selectedCampusId, campuses]);
 
   const handleNewBooking = () => {
@@ -232,17 +229,21 @@ export function BookingsPageClient() {
           <PageHeader
             title="Bookings"
             actions={
-              <div className="flex flex-wrap items-center justify-end gap-3">
-                <div className="flex flex-wrap rounded-xl border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="Choose a view">
-                  {VIEWS.map((v) => (
+              <div className="flex items-center gap-3">
+                <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Calendar view">
+                  {VIEWS.map(({ id, label, title, Icon }) => (
                     <button
-                      key={v.id}
-                      onClick={() => chooseView(v.id)}
-                      title={v.title}
-                      aria-pressed={view === v.id}
-                      className={`rounded-lg px-3 py-2 text-sm font-medium transition ${view === v.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                      key={id}
+                      role="tab"
+                      aria-selected={view === id}
+                      onClick={() => chooseView(id)}
+                      title={title}
+                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition ${
+                        view === id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700'
+                      }`}
                     >
-                      {v.label}
+                      <Icon className="h-5 w-5" />
+                      <span className="hidden md:inline">{label}</span>
                     </button>
                   ))}
                 </div>
@@ -292,21 +293,18 @@ export function BookingsPageClient() {
             </div>
           </div>
 
-          {(view === 'calendar' || view === 'week' || view === 'timeline') && (
-            <ProgramLegend bookings={bookings} hidden={hiddenPrograms} onChange={setHiddenPrograms} />
-          )}
-
-          {view === 'week' || view === 'timeline' ? (
-            React.createElement(view === 'week' ? RoomWeekView : RoomTimelineView, {
-              campus: campuses.find((c) => c.id === selectedCampusId) || null,
-              rooms,
-              roomId: selectedRoomId,
-              bookings: visibleBookings,
-              isLoading: loading,
-              onEventClick: handleEventClick,
-              onFreeSlotClick: isAdminOrScheduler ? handleFreeSlotClick : undefined,
-              onRangeChange: (start: Date, end: Date) => setRange({ start, end }),
-            })
+          {view === 'timetable' ? (
+            <RoomTimetable
+              campus={campuses.find((c) => c.id === selectedCampusId) || null}
+              rooms={rooms}
+              roomId={selectedRoomId}
+              onEventClick={handleEventClick}
+              onFreeSlotClick={isAdminOrScheduler ? handleFreeSlotClick : undefined}
+              refreshKey={refreshKey}
+              hiddenPrograms={hiddenPrograms}
+              onToggleProgram={toggleProgram}
+              onShowAllPrograms={showAllPrograms}
+            />
           ) : view === 'rooms' ? (
             <RoomAvailability
               campus={campuses.find((c) => c.id === selectedCampusId) || null}
@@ -315,15 +313,21 @@ export function BookingsPageClient() {
               onEventClick={handleEventClick}
               onFreeSlotClick={isAdminOrScheduler ? handleFreeSlotClick : undefined}
               refreshKey={refreshKey}
+              hiddenPrograms={hiddenPrograms}
+              onToggleProgram={toggleProgram}
+              onShowAllPrograms={showAllPrograms}
             />
           ) : view === 'calendar' ? (
             <BookingCalendar
-              bookings={visibleBookings}
+              bookings={bookings}
               onEventClick={handleEventClick}
               onDateSelect={isAdminOrScheduler ? handleDateSelect : undefined}
               selectable={isAdminOrScheduler}
               onRangeChange={(start, end) => setRange({ start, end })}
               isLoading={loading}
+              hiddenPrograms={hiddenPrograms}
+              onToggleProgram={toggleProgram}
+              onShowAllPrograms={showAllPrograms}
             />
           ) : (
             <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-card min-h-[400px]">
@@ -355,7 +359,10 @@ export function BookingsPageClient() {
         <ImportExportModal
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}
-          onImported={fetchBookings}
+          onImported={() => {
+            invalidatePrograms(); // an import may add a program
+            fetchBookings();
+          }}
           campusId={selectedCampusId}
           roomId={selectedRoomId}
         />

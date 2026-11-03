@@ -6,7 +6,9 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { bookingLabel, programOf, programStyle } from '@/lib/programs';
+import { bookingColors, programOf } from '@/lib/programs';
+import { usePrograms } from '@/lib/use-programs';
+import { ProgramLegend, countPrograms } from './ProgramLegend';
 
 interface BookingCalendarProps {
   bookings: any[];
@@ -16,21 +18,38 @@ interface BookingCalendarProps {
   /** When false the calendar is view-only (no click-to-book). */
   selectable?: boolean;
   isLoading?: boolean;
+  hiddenPrograms?: Set<string>;
+  onToggleProgram?: (program: string) => void;
+  onShowAllPrograms?: () => void;
 }
 
-export function BookingCalendar({ bookings, onEventClick, onDateSelect, onRangeChange, selectable = true, isLoading }: BookingCalendarProps) {
-  
-  const events = bookings.map(booking => {
-    const style = programStyle(programOf(booking));
+export function BookingCalendar({
+  bookings,
+  onEventClick,
+  onDateSelect,
+  onRangeChange,
+  selectable = true,
+  isLoading,
+  hiddenPrograms,
+  onToggleProgram,
+  onShowAllPrograms,
+}: BookingCalendarProps) {
+
+  const programs = usePrograms();
+  const counts = countPrograms(bookings);
+  const shown = hiddenPrograms?.size ? bookings.filter((b) => !hiddenPrograms.has(programOf(b))) : bookings;
+  const events = shown.map(booking => {
+    // Colored by program (the letters of the TermID), the same as the other views.
+    const c = bookingColors(booking, programs);
     return {
       id: booking.id,
       // Imported sessions show only their TermID; the full details are in the click modal.
-      title: bookingLabel(booking),
+      title: booking.termId || booking.title,
       start: booking.startTime,
       end: booking.endTime,
-      backgroundColor: style.backgroundColor,
-      borderColor: style.borderColor,
-      textColor: style.color,
+      backgroundColor: c.bg,
+      borderColor: '#ffffff',
+      textColor: c.fg,
       extendedProps: { booking }
     };
   });
@@ -53,6 +72,16 @@ export function BookingCalendar({ bookings, onEventClick, onDateSelect, onRangeC
         </div>
       )}
       
+      {onToggleProgram && (
+        <ProgramLegend
+          counts={counts}
+          programs={programs}
+          hidden={hiddenPrograms || new Set()}
+          onToggle={onToggleProgram}
+          onShowAll={onShowAllPrograms}
+        />
+      )}
+
       <div className="fc-theme-standard">
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
