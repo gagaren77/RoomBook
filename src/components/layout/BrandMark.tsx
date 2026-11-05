@@ -1,16 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { BRAND } from '@/lib/branding';
 import { cn } from '@/lib/utils';
+
+/**
+ * True once the image has failed to load. The server renders the img tag,
+ * so the browser can fail before React attaches onError; the effect catches
+ * that case.
+ */
+function useImageFailed() {
+  const ref = useRef<HTMLImageElement>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (el && el.complete && el.naturalWidth === 0) setFailed(true);
+  }, []);
+  return { ref, failed, onError: () => setFailed(true) };
+}
 
 /**
  * The college mark, with a plain calendar tile if the image cannot load.
  * `light` draws the fallback for a dark background.
  */
 export function BrandMark({ className, light = false }: { className?: string; light?: boolean }) {
-  const [failed, setFailed] = useState(false);
+  const { ref, failed, onError } = useImageFailed();
   if (failed) {
     return (
       <span
@@ -27,17 +42,17 @@ export function BrandMark({ className, light = false }: { className?: string; li
   return (
     <span className={cn('flex items-center justify-center overflow-hidden rounded-xl bg-white', className)}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={BRAND.mark} alt="" aria-hidden="true" className="h-full w-full object-contain p-0.5" onError={() => setFailed(true)} />
+      <img ref={ref} src={BRAND.mark} alt="" aria-hidden="true" className="h-full w-full object-contain p-0.5" onError={onError} />
     </span>
   );
 }
 
 /** The wide white college logo for the sign-in panel; the college name if it cannot load. */
 export function BrandLogoWhite({ className }: { className?: string }) {
-  const [failed, setFailed] = useState(false);
+  const { ref, failed, onError } = useImageFailed();
   if (failed) return <span className={cn('text-xl font-bold tracking-tight text-white', className)}>{BRAND.org}</span>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={BRAND.logoWhite} alt={BRAND.org} className={cn('h-12 w-auto', className)} onError={() => setFailed(true)} />
+    <img ref={ref} src={BRAND.logoWhite} alt={BRAND.org} className={cn('h-12 w-auto', className)} onError={onError} />
   );
 }
