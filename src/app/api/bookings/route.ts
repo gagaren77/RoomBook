@@ -6,6 +6,29 @@ import { sendICSInvite } from '@/lib/ics';
 import { sendOutlookInvite } from '@/lib/graph';
 import { canManageBookings } from '@/lib/permissions';
 
+const COMPACT_BOOKING = {
+  id: true,
+  title: true,
+  description: true,
+  startTime: true,
+  endTime: true,
+  roomId: true,
+  attendees: true,
+  status: true,
+  color: true,
+  notes: true,
+  termId: true,
+  courseId: true,
+  sectionId: true,
+  courseName: true,
+  sessionId: true,
+  timeSlots: true,
+  outlookEventId: true,
+  createdById: true,
+  room: { select: { id: true, name: true, campusId: true, campus: { select: { id: true, name: true, timeZone: true } } } },
+  createdBy: { select: { name: true, email: true } },
+} as const;
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -37,20 +60,25 @@ export async function GET(req: Request) {
       if (end) whereClause.startTime.lte = new Date(end);
     }
 
-    const bookings = await prisma.booking.findMany({
-      where: whereClause,
-      include: {
-        room: {
+    // fields=compact: what the calendar views need, without campus addresses
+    // or import bookkeeping, so a term's worth of classes stays small.
+    const compact = searchParams.get('fields') === 'compact';
+    const bookings = compact
+      ? await prisma.booking.findMany({ where: whereClause, select: COMPACT_BOOKING, orderBy: { startTime: 'asc' } })
+      : await prisma.booking.findMany({
+          where: whereClause,
           include: {
-            campus: true
-          }
-        },
-        createdBy: {
-          select: { name: true, email: true }
-        }
-      },
-      orderBy: { startTime: 'asc' }
-    });
+            room: {
+              include: {
+                campus: true
+              }
+            },
+            createdBy: {
+              select: { name: true, email: true }
+            }
+          },
+          orderBy: { startTime: 'asc' }
+        });
 
     return NextResponse.json(bookings);
   } catch (error) {
