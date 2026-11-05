@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { RoleBadge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { canManageBookings } from '@/lib/permissions';
 
 function initials(name?: string | null, email?: string | null) {
   const source = (name || email || 'U').trim();
@@ -26,11 +27,13 @@ export function Navigation() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const isAdmin = session?.user?.role === 'ADMIN';
+  const isManager = canManageBookings(session?.user?.role);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Bookings', href: '/bookings' },
     { name: 'Rooms', href: '/rooms' },
+    ...(isManager ? [{ name: 'Reports', href: '/reports' }] : []),
     ...(isAdmin ? [{ name: 'Campuses', href: '/campuses' }, { name: 'Users', href: '/admin/users' }] : []),
   ];
 
