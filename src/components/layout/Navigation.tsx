@@ -8,12 +8,13 @@ import { Disclosure, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
   XMarkIcon,
-  CalendarDaysIcon,
   UserCircleIcon,
   UsersIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import { RoleBadge } from '@/components/ui/Badge';
+import { BrandMark } from '@/components/layout/BrandMark';
+import { BRAND } from '@/lib/branding';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/use-permissions';
 
@@ -65,10 +66,8 @@ export function Navigation() {
             <div className="flex h-16 items-center justify-between">
               <div className="flex items-center gap-8">
                 <Link href="/dashboard" className="flex items-center gap-2.5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-600/30">
-                    <CalendarDaysIcon className="h-5 w-5" />
-                  </span>
-                  <span className="text-base font-bold tracking-tight text-slate-900">Room calendar</span>
+                  <BrandMark className="h-9 w-9" />
+                  <span className="text-base font-bold tracking-tight text-slate-900">{BRAND.name}</span>
                 </Link>
 
                 <div className="hidden items-center gap-1 sm:flex">
