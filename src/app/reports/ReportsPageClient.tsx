@@ -86,7 +86,7 @@ function hours(h: number) {
 function heatStyle(p: number): React.CSSProperties {
   if (!p) return { backgroundColor: '#ecfdf5', color: '#047857' };
   const a = Math.min(0.9, 0.12 + p / 50);
-  return { backgroundColor: `rgba(79, 70, 229, ${a.toFixed(2)})`, color: a >= 0.7 ? '#ffffff' : '#0f172a' };
+  return { backgroundColor: `rgba(0, 32, 91, ${a.toFixed(2)})`, color: a >= 0.7 ? '#ffffff' : '#0f172a' };
 }
 
 function Tile({ label, value, sub, hero, tone }: { label: string; value: string; sub?: string; hero?: boolean; tone?: string }) {

@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sendICSInvite } from '@/lib/ics';
 import { cancelOutlookEvent } from '@/lib/graph';
-import { canManageBookings } from '@/lib/permissions';
+import { can } from '@/lib/permissions-server';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -51,7 +51,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    if (!canManageBookings(session.user.role)) {
+    if (!(await can(session.user.role, 'bookings.manage'))) {
       return NextResponse.json({ error: 'Only admins and schedulers can change bookings' }, { status: 403 });
     }
 
@@ -140,7 +140,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    if (!canManageBookings(session.user.role)) {
+    if (!(await can(session.user.role, 'bookings.manage'))) {
       return NextResponse.json({ error: 'Only admins and schedulers can change bookings' }, { status: 403 });
     }
 

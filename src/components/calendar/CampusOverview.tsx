@@ -183,7 +183,7 @@ export function CampusOverview({ campuses, onPickCampus }: CampusOverviewProps) 
                             type="button"
                             onClick={() => onPickCampus(campus.id)}
                             title={classes ? `${campus.name}: ${classes} classes in ${busy} of ${roomCount} rooms` : `${campus.name}: nothing booked`}
-                            style={classes ? { backgroundColor: `rgba(79, 70, 229, ${(0.08 + 0.3 * ratio).toFixed(2)})` } : undefined}
+                            style={classes ? { backgroundColor: `rgba(0, 32, 91, ${(0.08 + 0.3 * ratio).toFixed(2)})` } : undefined}
                             className={`flex h-12 w-full flex-col items-center justify-center rounded-md text-center transition hover:ring-2 hover:ring-indigo-300 ${
                               classes ? 'text-slate-900' : 'bg-emerald-50/60 text-emerald-700'
                             }`}

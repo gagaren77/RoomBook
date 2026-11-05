@@ -55,6 +55,17 @@ model Campus {
   @@index([code])
 }
 
+/// Which features each role may use; admins may change these on the Permissions page.
+/// A missing row means the default from src/lib/permissions.ts.
+model RolePermission {
+  role      Role
+  feature   String
+  allowed   Boolean
+  updatedAt DateTime @updatedAt
+
+  @@id([role, feature])
+}
+
 model Room {
   id          String   @id @default(cuid())
   name        String

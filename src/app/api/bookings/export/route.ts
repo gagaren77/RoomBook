@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import ExcelJS from 'exceljs';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { canManageBookings } from '@/lib/permissions';
+import { can } from '@/lib/permissions-server';
 import { SCHEDULE_COLUMNS, formatTimeSlot, formatUsDate, toCsv, toZoned } from '@/lib/schedule';
 
 export const runtime = 'nodejs';
@@ -17,8 +17,8 @@ export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!canManageBookings(session.user.role)) {
-      return NextResponse.json({ error: 'Only admins and schedulers can export bookings' }, { status: 403 });
+    if (!(await can(session.user.role, 'bookings.import'))) {
+      return NextResponse.json({ error: 'Your role may not export bookings' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

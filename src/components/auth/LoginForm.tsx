@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { BuildingOfficeIcon } from '@heroicons/react/24/solid';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { BrandLogoWhite, BrandMark } from '@/components/layout/BrandMark';
+import { BRAND } from '@/lib/branding';
 
 export function LoginForm() {
   const router = useRouter();
@@ -53,35 +54,31 @@ export function LoginForm() {
       <div className="relative hidden overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl" />
-        <div className="relative flex items-center gap-3 text-white">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur">
-            <BuildingOfficeIcon className="h-6 w-6" />
-          </span>
-          <span className="text-xl font-bold tracking-tight">RoomBook</span>
+        <div className="relative flex items-center gap-4 text-white">
+          <BrandLogoWhite />
+          <span className="border-l border-white/30 pl-4 text-xl font-bold tracking-tight">{BRAND.name}</span>
         </div>
         <div className="relative max-w-md text-white">
           <h1 className="text-4xl font-bold leading-tight tracking-tight">
-            Book any room, on any campus, in seconds.
+            The room calendar for every campus.
           </h1>
           <p className="mt-4 text-lg text-indigo-100">
-            One shared calendar for classrooms, labs and meeting spaces, with no double bookings.
+            See which classrooms, labs and meeting rooms are in use, by day, week or term.
           </p>
         </div>
-        <p className="relative text-sm text-indigo-200">Midwestern Career College</p>
+        <p className="relative text-sm text-indigo-200">{BRAND.org}</p>
       </div>
 
       {/* Sign-in panel */}
       <div className="flex items-center justify-center px-4 py-12 sm:px-8">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-600/30">
-              <BuildingOfficeIcon className="h-6 w-6" />
-            </span>
-            <span className="text-xl font-bold tracking-tight text-slate-900">RoomBook</span>
+            <BrandMark className="h-11 w-11" />
+            <span className="text-xl font-bold tracking-tight text-slate-900">{BRAND.name}</span>
           </div>
 
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back</h2>
-          <p className="mt-2 text-sm text-slate-500">Sign in to manage and book rooms.</p>
+          <p className="mt-2 text-sm text-slate-500">Sign in to see the room calendar.</p>
 
           <div className="mt-8 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-card sm:p-8">
             <Button

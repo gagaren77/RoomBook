@@ -11,8 +11,8 @@
   body {
     @apply bg-slate-50 text-slate-900 antialiased;
     background-image:
-      radial-gradient(60rem 30rem at 100% -10%, rgba(99, 102, 241, 0.08), transparent 60%),
-      radial-gradient(50rem 30rem at -10% 0%, rgba(14, 165, 233, 0.06), transparent 60%);
+      radial-gradient(60rem 30rem at 100% -10%, rgba(0, 32, 91, 0.07), transparent 60%),
+      radial-gradient(50rem 30rem at -10% 0%, rgba(12, 167, 225, 0.06), transparent 60%);
     background-attachment: fixed;
   }
 
@@ -32,7 +32,7 @@
 
   input[type='checkbox'],
   input[type='radio'] {
-    @apply h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500/30;
+    @apply h-4 w-4 rounded border-slate-300 text-indigo-600 accent-indigo-700 focus:ring-2 focus:ring-indigo-500/30;
   }
 
   label {
@@ -43,7 +43,7 @@
 /* ---------- FullCalendar theme ---------- */
 .fc {
   --fc-border-color: #e2e8f0;
-  --fc-today-bg-color: rgba(99, 102, 241, 0.06);
+  --fc-today-bg-color: rgba(0, 32, 91, 0.06);
   --fc-page-bg-color: transparent;
   --fc-neutral-bg-color: #f8fafc;
   --fc-now-indicator-color: #ef4444;
@@ -82,13 +82,13 @@
 
 .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: #00205b;
+  border-color: #00205b;
   color: #ffffff;
 }
 
 .fc .fc-button-primary:focus {
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important;
+  box-shadow: 0 0 0 4px rgba(0, 32, 91, 0.2) !important;
 }
 
 .fc .fc-button-group > .fc-button {
@@ -112,8 +112,8 @@
 }
 
 .fc .fc-timegrid-more-link {
-  background: #eef2ff;
-  color: #3730a3;
+  background: #eef3fa;
+  color: #00205b;
   font-weight: 600;
 }
 

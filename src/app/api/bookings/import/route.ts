@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { canManageBookings } from '@/lib/permissions';
+import { can } from '@/lib/permissions-server';
 import { ensureCampuses } from '@/lib/campuses';
 import { readScheduleFile } from '@/lib/schedule-file';
 import { bookingTitle, normalizeRows, SKIP_LABELS, ScheduleSession } from '@/lib/schedule';
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!canManageBookings(session.user.role)) {
+    if (!(await can(session.user.role, 'bookings.import'))) {
       return NextResponse.json({ error: 'Only admins and schedulers can import bookings' }, { status: 403 });
     }
 
