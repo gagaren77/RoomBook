@@ -3,8 +3,8 @@ import { Toaster } from 'react-hot-toast';
 import AuthSessionProvider from '@/components/providers/SessionProvider';
 
 export const metadata = {
-  title: 'School Room Booking System',
-  description: 'Manage and book school rooms easily.',
+  title: 'Room calendar · Midwestern Career College',
+  description: 'Room schedules for every Midwestern Career College campus.',
 };
 
 export default function RootLayout({

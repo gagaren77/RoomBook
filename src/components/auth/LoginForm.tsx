@@ -57,14 +57,14 @@ export function LoginForm() {
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur">
             <BuildingOfficeIcon className="h-6 w-6" />
           </span>
-          <span className="text-xl font-bold tracking-tight">RoomBook</span>
+          <span className="text-xl font-bold tracking-tight">Room calendar</span>
         </div>
         <div className="relative max-w-md text-white">
           <h1 className="text-4xl font-bold leading-tight tracking-tight">
-            Book any room, on any campus, in seconds.
+            The room calendar for every campus.
           </h1>
           <p className="mt-4 text-lg text-indigo-100">
-            One shared calendar for classrooms, labs and meeting spaces, with no double bookings.
+            See which classrooms, labs and meeting rooms are in use, by day, week or term.
           </p>
         </div>
         <p className="relative text-sm text-indigo-200">Midwestern Career College</p>
@@ -77,11 +77,11 @@ export function LoginForm() {
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-600/30">
               <BuildingOfficeIcon className="h-6 w-6" />
             </span>
-            <span className="text-xl font-bold tracking-tight text-slate-900">RoomBook</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">Room calendar</span>
           </div>
 
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back</h2>
-          <p className="mt-2 text-sm text-slate-500">Sign in to manage and book rooms.</p>
+          <p className="mt-2 text-sm text-slate-500">Sign in to see the room calendar.</p>
 
           <div className="mt-8 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-card sm:p-8">
             <Button
