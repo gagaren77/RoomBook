@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { can } from '@/lib/permissions-server';
 
 export async function GET(req: Request) {
   try {
@@ -57,7 +58,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !(await can(session.user.role, 'rooms.manage'))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

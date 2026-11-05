@@ -15,7 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { RoleBadge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
-import { canManageBookings } from '@/lib/permissions';
+import { usePermissions } from '@/lib/use-permissions';
 
 function initials(name?: string | null, email?: string | null) {
   const source = (name || email || 'U').trim();
@@ -27,14 +27,20 @@ export function Navigation() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const isAdmin = session?.user?.role === 'ADMIN';
-  const isManager = canManageBookings(session?.user?.role);
+  const { can } = usePermissions();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Bookings', href: '/bookings' },
     { name: 'Rooms', href: '/rooms' },
-    ...(isManager ? [{ name: 'Reports', href: '/reports' }] : []),
-    ...(isAdmin ? [{ name: 'Campuses', href: '/campuses' }, { name: 'Users', href: '/admin/users' }] : []),
+    ...(can('reports') ? [{ name: 'Reports', href: '/reports' }] : []),
+    ...(isAdmin
+      ? [
+          { name: 'Campuses', href: '/campuses' },
+          { name: 'Users', href: '/admin/users' },
+          { name: 'Permissions', href: '/admin/permissions' },
+        ]
+      : []),
   ];
 
   const avatar = (size: string) => (
@@ -62,7 +68,7 @@ export function Navigation() {
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-600/30">
                     <CalendarDaysIcon className="h-5 w-5" />
                   </span>
-                  <span className="text-base font-bold tracking-tight text-slate-900">RoomBook</span>
+                  <span className="text-base font-bold tracking-tight text-slate-900">Room calendar</span>
                 </Link>
 
                 <div className="hidden items-center gap-1 sm:flex">

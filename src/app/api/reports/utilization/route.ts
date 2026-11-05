@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import ExcelJS from 'exceljs';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { canManageBookings } from '@/lib/permissions';
+import { can } from '@/lib/permissions-server';
 import { DEFAULT_BLOCKS, TimeBlock, hourLabel, parseClock } from '@/lib/time-blocks';
 import { DAY_NAMES, dayIndex, parseIsoDate, rangeLabel } from '@/lib/dates';
 import { computeUtilization, UtilizationReport } from '@/lib/utilization';
@@ -27,8 +27,8 @@ export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!canManageBookings(session.user.role)) {
-      return NextResponse.json({ error: 'Only admins and schedulers can run reports' }, { status: 403 });
+    if (!(await can(session.user.role, 'reports'))) {
+      return NextResponse.json({ error: 'Your role may not run reports' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -119,7 +119,7 @@ function parseBlocks(v: string | null): TimeBlock[] | null {
 
 async function toWorkbook(r: UtilizationReport, campusName: string): Promise<ArrayBuffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'RoomBook';
+  wb.creator = 'Room calendar';
   const pct = (m: { pct: number }) => m.pct / 100;
   const pctFmt = '0.0%';
   const start = parseIsoDate(r.range.start)!;

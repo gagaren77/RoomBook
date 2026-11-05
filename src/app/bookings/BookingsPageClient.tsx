@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 import { PlusIcon, ListBulletIcon, CalendarDaysIcon, ArrowsUpDownIcon, TableCellsIcon, ViewColumnsIcon } from '@heroicons/react/24/outline';
 import { Navigation } from '@/components/layout/Navigation';
@@ -16,7 +15,7 @@ import { BookingModal } from '@/components/bookings/BookingModal';
 import { BookingDetailModal } from '@/components/bookings/BookingDetailModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ImportExportModal } from '@/components/bookings/ImportExportModal';
-import { canManageBookings } from '@/lib/permissions';
+import { usePermissions } from '@/lib/use-permissions';
 import { invalidatePrograms } from '@/lib/use-programs';
 
 type BookingsView = 'timetable' | 'rooms' | 'calendar' | 'list';
@@ -29,8 +28,9 @@ const VIEWS: { id: BookingsView; label: string; title: string; Icon: React.Compo
 ];
 
 export function BookingsPageClient() {
-  const { data: session } = useSession();
-  const isAdminOrScheduler = canManageBookings(session?.user?.role);
+  const { can } = usePermissions();
+  const isAdminOrScheduler = can('bookings.manage');
+  const canImport = can('bookings.import');
   
   // Each user picks how to see the calendar; the last choice is remembered in
   // this browser. Rooms by day is the default.
@@ -243,17 +243,17 @@ export function BookingsPageClient() {
                     </button>
                   ))}
                 </div>
+                {canImport && (
+                  <Button variant="secondary" onClick={() => setIsImportOpen(true)}>
+                    <ArrowsUpDownIcon className="-ml-1 h-5 w-5" />
+                    Import / Export
+                  </Button>
+                )}
                 {isAdminOrScheduler && (
-                  <>
-                    <Button variant="secondary" onClick={() => setIsImportOpen(true)}>
-                      <ArrowsUpDownIcon className="-ml-1 h-5 w-5" />
-                      Import / Export
-                    </Button>
-                    <Button onClick={handleNewBooking}>
-                      <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-                      New Booking
-                    </Button>
-                  </>
+                  <Button onClick={handleNewBooking}>
+                    <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+                    New Booking
+                  </Button>
                 )}
               </div>
             }
@@ -354,7 +354,7 @@ export function BookingsPageClient() {
         </div>
       </main>
 
-      {isAdminOrScheduler && (
+      {canImport && (
         <ImportExportModal
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}

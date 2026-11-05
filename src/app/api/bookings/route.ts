@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sendICSInvite } from '@/lib/ics';
 import { sendOutlookInvite } from '@/lib/graph';
-import { canManageBookings } from '@/lib/permissions';
+import { can } from '@/lib/permissions-server';
 
 const COMPACT_BOOKING = {
   id: true,
@@ -93,8 +93,8 @@ export async function POST(req: Request) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (!canManageBookings(session.user.role)) {
-      return NextResponse.json({ error: 'Only admins and schedulers can create bookings' }, { status: 403 });
+    if (!(await can(session.user.role, 'bookings.manage'))) {
+      return NextResponse.json({ error: 'Your role may not create bookings' }, { status: 403 });
     }
 
     const body = await req.json();

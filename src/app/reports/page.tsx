@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { AccessDenied } from '@/components/layout/AccessDenied';
 import { Navigation } from '@/components/layout/Navigation';
-import { canManageBookings } from '@/lib/permissions';
+import { can } from '@/lib/permissions-server';
 import { ReportsPageClient } from './ReportsPageClient';
 
 export default async function ReportsPage() {
@@ -13,7 +13,7 @@ export default async function ReportsPage() {
     redirect('/login');
   }
 
-  if (!canManageBookings(session.user.role)) {
+  if (!(await can(session.user.role, 'reports'))) {
     return (
       <div className="min-h-screen">
         <Navigation />

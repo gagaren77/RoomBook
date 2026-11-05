@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { useSession } from 'next-auth/react';
 import { Navigation } from '@/components/layout/Navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -14,10 +13,11 @@ import { RoomCard } from '@/components/rooms/RoomCard';
 import { RoomForm } from '@/components/rooms/RoomForm';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { usePermissions } from '@/lib/use-permissions';
 
 export function RoomsPageClient() {
-  const { data: session } = useSession();
-  const isAdmin = session?.user?.role === 'ADMIN';
+  const { can } = usePermissions();
+  const isAdmin = can('rooms.manage');
   const searchParams = useSearchParams();
   const initialCampusId = searchParams?.get('campusId') || '';
 
