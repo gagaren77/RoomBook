@@ -1,440 +1,103 @@
-# School Room & Resource Booking System
+# Room calendar (RoomBook)
 
-An enterprise-ready room and resource scheduling web application designed for multi-campus academic institutions. Built with Next.js 14 (App Router), TypeScript, Tailwind CSS, PostgreSQL, and Prisma ORM. Supports single sign-on (SSO) via Okta, local credential authentication, automated calendar invites via Microsoft Graph API with fallback to iCalendar (.ics) email delivery, and multi-campus resource management.
+Room calendar is the room booking and scheduling app for **Midwestern Career College**, running at **https://booking.it1dep.com**. It shows which classrooms are in use on every campus, lets schedulers book rooms without double-booking, loads the college's course schedule from a spreadsheet, and reports how much of the available room time is actually used.
 
----
-
-## Table of Contents
-1. [Overview](#1-overview)
-2. [Tech Stack](#2-tech-stack)
-3. [Prerequisites](#3-prerequisites)
-4. [Environment Setup](#4-environment-setup)
-   - [Environment Variables Reference](#environment-variables-reference)
-   - [Okta SSO Configuration](#okta-sso-configuration)
-   - [Azure AD Configuration (Microsoft Graph API)](#azure-ad-configuration-microsoft-graph-api)
-   - [Database Setup (Coolify / Managed PostgreSQL)](#database-setup-coolify--managed-postgresql)
-5. [Coolify Deployment](#5-coolify-deployment)
-6. [Local Development](#6-local-development)
-   - [Bare Metal (Node.js & Local PostgreSQL)](#bare-metal-nodejs--local-postgresql)
-   - [Docker Compose (Local Development)](#docker-compose-local-development)
-7. [Default Admin Account](#7-default-admin-account)
-8. [User Roles Explanation](#8-user-roles-explanation)
-9. [Sending Invites (Graph API vs. ICS Fallback)](#9-sending-invites-graph-api-vs-ics-fallback)
-10. [Adding Campuses and Rooms](#10-adding-campuses-and-rooms)
-11. [Schedule Import / Export](#11-schedule-import--export)
-12. [Faster Deploys: Build the Image on GitHub](#12-faster-deploys-build-the-image-on-github)
+Built with Next.js 14 (App Router), TypeScript, Tailwind CSS, PostgreSQL and Prisma, and deployed as a Docker image on Coolify.
 
 ---
 
-## 1. Overview
+## Contents
 
-The **School Room & Resource Booking System** streamlines room scheduling, resource tracking, and conflict-free booking across educational facilities. Designed specifically for colleges with multiple campuses, departments, and diverse room types (classrooms, computer labs, conference rooms, lecture halls).
-
-### Key Features
-- **Multi-Campus Support**: Organize campuses, buildings, and rooms by geographic location with address and contact details.
-- **Interactive Calendar Views**: Rich calendar interfaces (DayGrid, TimeGrid, Resource Timeline, Agenda List) powered by FullCalendar.
-- **Conflict Prevention**: Built-in validation ensuring rooms cannot be double-booked for overlapping time ranges.
-- **Dual Authentication**:
-  - **Okta OIDC / SSO**: Enterprise institutional login with automated user provisioning.
-  - **Credentials Provider**: Fallback email and password authentication with bcrypt hashing.
-- **Role-Based Access Control (RBAC)**: Fine-grained permissions for `ADMIN`, `SCHEDULER`, and `INSTRUCTOR`.
-- **Automated Calendar Invites**:
-  - **Microsoft Graph API**: Direct synchronization with Microsoft 365 / Outlook calendars.
-  - **ICS Email Invites**: RFC 5545 `.ics` calendar invite attachments delivered via SMTP for universal calendar client compatibility.
-- **Room Amenities & Capacity Management**: Track capacities and equipment (Projectors, Smartboards, Computers, Whiteboards, Video Conferencing).
-- **Health Monitoring**: Dedicated container health endpoint at `/api/health`.
+1. [What the app does](#1-what-the-app-does)
+2. [Roles and permissions](#2-roles-and-permissions)
+3. [Schedule import / export](#3-schedule-import--export)
+4. [Utilization report](#4-utilization-report)
+5. [How the code is organized](#5-how-the-code-is-organized)
+6. [Running it locally](#6-running-it-locally)
+7. [Configuration](#7-configuration)
+8. [Deploying (Coolify + GitHub image)](#8-deploying-coolify--github-image)
+9. [Calendar invites](#9-calendar-invites)
+10. [Known limitations](#10-known-limitations)
 
 ---
 
-## 2. Tech Stack
+## 1. What the app does
 
-- **Framework**: [Next.js 14](https://nextjs.org/) (App Router, Server Components, Route Handlers)
-- **Language**: [TypeScript 5](https://www.typescriptlang.org/)
-- **Frontend & Styling**: [React 18](https://react.dev/), [Tailwind CSS](https://tailwindcss.com/), [Headless UI](https://headlessui.com/), [Heroicons](https://heroicons.com/)
-- **Calendar & Scheduling**: [FullCalendar](https://fullcalendar.io/) (Core, DayGrid, TimeGrid, Resource TimeGrid, Scheduler)
-- **Database & ORM**: [PostgreSQL 16](https://www.postgresql.org/), [Prisma ORM 5](https://www.prisma.io/)
-- **Authentication**: [NextAuth.js v4](https://next-auth.js.org/) (Okta Provider + Credentials Provider)
-- **External Integrations**:
-  - [Microsoft Graph Client](https://github.com/microsoftgraph/msgraph-sdk-javascript) (`@microsoft/microsoft-graph-client`)
-  - [Nodemailer](https://nodemailer.com/) (SMTP transport)
-  - [ical-generator](https://github.com/sebbo2002/ical-generator) (iCalendar standard RFC 5545 generator)
-- **Containerization & Deployment**: Docker (Multi-stage alpine build), Docker Compose, [Coolify](https://coolify.io/)
+### Pages
+
+| Page | Who sees it | What it is for |
+|---|---|---|
+| **Sign in** (`/login`) | everyone | Email and password, or Okta single sign-on. |
+| **Dashboard** (`/dashboard`) | everyone | Counts of campuses, rooms, bookings today and in the next 7 days; upcoming bookings; quick links. |
+| **Bookings** (`/bookings`) | everyone | The room calendar, with four views (below), campus and room filters, and booking details. |
+| **Rooms** (`/rooms`) | everyone | Rooms per campus with capacity, floor, building and amenities. Adding and editing needs the *rooms* permission. |
+| **Reports** (`/reports`) | *reports* permission | Room utilization report with Excel export and Print / PDF. |
+| **Campuses** (`/campuses`) | admins | Campus name, address, import code (`CampusID`), time zone and map position. Deleting a campus deactivates it so its booking history stays. |
+| **Users** (`/admin/users`) | admins | Create accounts, set roles, reset passwords. |
+| **Permissions** (`/admin/permissions`) | admins | Turn features on or off for schedulers and instructors. |
+| **My profile** (`/profile`) | everyone | Change your name and password. |
+
+### Calendar views (Bookings page)
+
+The selected view is remembered in the browser.
+
+- **Rooms by day** (default): one row per room, one column per day.
+  - *Week* lists every class in each cell.
+  - *Month* and *Custom* (any range up to about four months) show one small cell per room and day, filled when the room is booked. You can show all three parts of the day as stripes (Morning 7a–12p, Afternoon 12p–5p, Evening 5p–10p) or just one of them, and switch weekends on or off.
+- **Room timeline**: one day, one row per room, time running left to right, free time shaded green.
+- **Week**: a classic week calendar (FullCalendar).
+- **List**: every booking as a card.
+
+With **All campuses** selected, the two room views first show one row per campus; click a campus to open its rooms.
+
+Bookings are **colored by program**. Imported bookings carry a TermID such as `BUSA2608CM1`; the letters in front (`BUSA`) are the program, and each program keeps the same color on every view and every week. The legend under the calendar counts bookings per program and lets you hide or show a program with one click.
+
+### Bookings
+
+- Admins and schedulers (by default) can create, edit and cancel bookings, including by clicking a free cell or free time in the room views.
+- The server refuses a booking that overlaps another booking in the same room (`409 Room is already booked for this time`).
+- Times are shown in each campus's own time zone (Central for Illinois, Eastern for Ohio).
+- Instructors get a **read-only** calendar: they can look at every view and open bookings, but cannot change anything.
+
+### Mobile
+
+Every page works on a phone: the navigation collapses into a menu, the view switcher shows icons only, and wide tables scroll inside their card instead of stretching the page.
 
 ---
 
-## 3. Prerequisites
+## 2. Roles and permissions
 
-Before running or deploying the application, ensure you have:
+There are three roles (`prisma/schema.prisma`, `enum Role`):
 
-- **Docker & Docker Compose**: Docker Engine 24+ and Docker Compose v2.
-- **Node.js & npm** (for local development without Docker): Node.js 20 LTS and npm 10+.
-- **PostgreSQL**: PostgreSQL 16 database instance (local or hosted).
-- **Okta Admin Account** (optional for local testing, required for production SSO).
-- **Microsoft Entra ID / Azure AD Tenant** (optional, for native Outlook calendar sync).
-- **SMTP Server**: Office 365, SendGrid, Amazon SES, or standard SMTP server for email notifications.
+| Role | Meaning |
+|---|---|
+| `ADMIN` | Can do everything, always. Also manages campuses, users and permissions. |
+| `SCHEDULER` | Day-to-day scheduling staff. |
+| `INSTRUCTOR` | Read-only by default. New Okta users start here. |
 
----
+What schedulers and instructors may do is set by an admin on the **Permissions** page and stored in the `RolePermission` table. A missing row means the default from `src/lib/permissions.ts`:
 
-## 4. Environment Setup
-
-Copy `.env.example` to create your working `.env` file:
-```bash
-cp .env.example .env
-```
-
-### Environment Variables Reference
-
-| Variable | Description | Example / Default | Required |
+| Feature | Key | Scheduler default | Instructor default |
 |---|---|---|---|
-| `DATABASE_URL` | PostgreSQL connection URL | `postgresql://postgres:postgres@localhost:5432/school_booking` | Yes |
-| `POSTGRES_DB` | Docker Postgres database name | `school_booking` | In Docker |
-| `POSTGRES_USER` | Docker Postgres user | `postgres` | In Docker |
-| `POSTGRES_PASSWORD` | Docker Postgres password | `postgres` (use strong password in prod) | In Docker |
-| `NEXTAUTH_SECRET` | 32-byte base64 secret for JWT encryption | Generate with `openssl rand -base64 32` | Yes |
-| `NEXTAUTH_URL` | Canonical URL of the web application | `http://localhost:3000` or `https://booking.school.edu` | Yes |
-| `OKTA_CLIENT_ID` | Okta OIDC Application Client ID | `0oa...` | For Okta SSO |
-| `OKTA_CLIENT_SECRET` | Okta OIDC Application Client Secret | `secret...` | For Okta SSO |
-| `OKTA_ISSUER` | Okta Authorization Server URL | `https://your-org.okta.com` | For Okta SSO |
-| `AZURE_AD_CLIENT_ID` | Azure AD App Registration (Client) ID | `00000000-0000-0000-0000-000000000000` | For Graph API |
-| `AZURE_AD_CLIENT_SECRET`| Azure AD App Registration Client Secret | `~secret...` | For Graph API |
-| `AZURE_AD_TENANT_ID` | Azure AD Directory (Tenant) ID | `00000000-0000-0000-0000-000000000000` | For Graph API |
-| `SMTP_HOST` | SMTP server hostname | `smtp.office365.com` | For ICS Invites |
-| `SMTP_PORT` | SMTP port (`587` for STARTTLS, `465` for SSL) | `587` | For ICS Invites |
-| `SMTP_USER` | SMTP authentication user / email | `noreply@your-school.edu` | For ICS Invites |
-| `SMTP_PASSWORD` | SMTP password or App Password | `app-password` | For ICS Invites |
-| `SMTP_FROM` | Sender display name and email address | `School Booking System <noreply@your-school.edu>`| For ICS Invites |
-| `APP_NAME` | Institutional application title | `School Room Booking` | No |
-| `APP_URL` | Public application root URL | `http://localhost:3000` | Yes |
+| Create, edit and cancel bookings | `bookings.manage` | yes | no |
+| Import and export schedules | `bookings.import` | yes | no |
+| View reports | `reports` | yes | no |
+| Add, edit and remove rooms | `rooms.manage` | no | no |
 
----
+The API routes check the same permissions on the server (`src/lib/permissions-server.ts`), so hiding a button is never the only protection.
 
-### Okta SSO Configuration
+**Accounts.** A user signing in with Okta for the first time is created as `INSTRUCTOR`. Admins can also create email-and-password accounts on the Users page. The seed creates one admin:
 
-Follow these steps in the Okta Admin Console:
-
-1. **Open Applications**: Log in to `https://<your-org>-admin.okta.com` and go to **Applications** → **Applications**.
-2. **Create App Integration**:
-   - Click **Create App Integration**.
-   - Select **OIDC - OpenID Connect** as the Sign-in method.
-   - Select **Web Application** as the Application type.
-   - Click **Next**.
-3. **Configure Settings**:
-   - **App integration name**: `School Room Booking`
-   - **Grant type**: Check `Authorization Code` and `Refresh Token`.
-   - **Sign-in redirect URIs**:
-     ```
-     {APP_URL}/api/auth/callback/okta
-     ```
-     *(e.g., `http://localhost:3000/api/auth/callback/okta` for local dev or `https://booking.school.edu/api/auth/callback/okta` for production)*
-   - **Sign-out redirect URIs**:
-     ```
-     {APP_URL}/login
-     ```
-   - **Controlled access**: Select **Allow everyone in your organization to access** or choose specific groups.
-4. **Copy Credentials**:
-   - Save the app.
-   - Copy **Client ID** → `OKTA_CLIENT_ID`
-   - Copy **Client secret** → `OKTA_CLIENT_SECRET`
-   - Copy the **Okta domain** (e.g., `https://dev-123456.okta.com` or `https://school.okta.com`) → `OKTA_ISSUER`
-
----
-
-### Azure AD Configuration (Microsoft Graph API)
-
-To enable direct synchronization with Microsoft 365 / Outlook calendars:
-
-1. **Access Microsoft Entra ID**: Go to [Microsoft Entra admin center](https://entra.microsoft.com) or [Azure Portal](https://portal.azure.com).
-2. **Register an Application**:
-   - Navigate to **Identity** → **Applications** → **App registrations** → **New registration**.
-   - **Name**: `School Room Booking System`
-   - **Supported account types**: `Accounts in this organizational directory only (Single tenant)`
-   - **Redirect URI (optional)**: Web: `{APP_URL}/api/auth/callback`
-   - Click **Register**.
-3. **Record IDs**:
-   - Copy **Application (client) ID** → `AZURE_AD_CLIENT_ID`
-   - Copy **Directory (tenant) ID** → `AZURE_AD_TENANT_ID`
-4. **Create Client Secret**:
-   - Go to **Certificates & secrets** → **Client secrets** → **New client secret**.
-   - Add a description (e.g. `Booking App Production`) and set an expiration period.
-   - Click **Add** and immediately copy the **Value** → `AZURE_AD_CLIENT_SECRET`.
-5. **Grant API Permissions**:
-   - Go to **API permissions** → **Add a permission** → **Microsoft Graph**.
-   - Select **Application permissions**:
-     - `Calendars.ReadWrite` (Allows the app to create, update, and delete calendar events)
-     - `Mail.Send` (Allows the app to send meeting notifications directly through Exchange)
-   - Click **Add permissions**.
-   - Click **Grant admin consent for <Your Organization>** and confirm.
-
----
-
-### Database Setup (Coolify / Managed PostgreSQL)
-
-If deploying via Coolify:
-1. In the Coolify Dashboard, navigate to your Project and target Environment.
-2. Click **+ New Resource** → **Database** → **PostgreSQL**.
-3. Name your database service (e.g., `booking-postgres`).
-4. Set:
-   - Database Name: `school_booking`
-   - User: `postgres` (or custom username)
-   - Password: `<a-secure-password>`
-5. Coolify will generate an internal connection URL:
-   ```
-   postgresql://postgres:<password>@<service-id>:5432/school_booking
-   ```
-   Use this URL as the value for `DATABASE_URL` in your application resource settings.
-
----
-
-## 5. Coolify Deployment
-
-Coolify makes deploying and managing Dockerized applications straightforward:
-
-### Step 1: Create a Project
-1. In the Coolify Dashboard, click **Projects** → select or create a Project (e.g., `Academic Operations`).
-2. Select the target environment (e.g., `Production`).
-
-### Step 2: Provision PostgreSQL
-1. Click **+ New Resource** → **Database** → **PostgreSQL**.
-2. Set the database name to `school_booking`.
-3. Note the internal connection hostname and credentials.
-
-### Step 3: Add Application as Docker Compose
-1. Click **+ New Resource** → **Source** (GitHub / Gitlab / Git Repository).
-2. Select your Git repository containing the booking app code.
-3. In the **Build Pack** selection, choose **Docker Compose**.
-4. Set the Compose file path to `docker-compose.yml`.
-
-### Step 4: Configure Environment Variables
-In the application's **Environment Variables** tab in Coolify, add all necessary variables:
-```dotenv
-DATABASE_URL=postgresql://postgres:<password>@<internal-postgres-host>:5432/school_booking
-NEXTAUTH_SECRET=your-random-32-byte-secret
-NEXTAUTH_URL=https://booking.school.edu
-APP_URL=https://booking.school.edu
-OKTA_CLIENT_ID=your-okta-client-id
-OKTA_CLIENT_SECRET=your-okta-client-secret
-OKTA_ISSUER=https://school.okta.com
-AZURE_AD_CLIENT_ID=your-azure-ad-client-id
-AZURE_AD_CLIENT_SECRET=your-azure-ad-client-secret
-AZURE_AD_TENANT_ID=your-azure-ad-tenant-id
-SMTP_HOST=smtp.office365.com
-SMTP_PORT=587
-SMTP_USER=noreply@school.edu
-SMTP_PASSWORD=your-smtp-password
-SMTP_FROM=School Booking System <noreply@school.edu>
-```
-
-### Step 5: Deploy the Stack
-Click **Deploy** in the top right corner. Coolify will build the multi-stage Docker image and start the containers.
-
-### Step 6: Run Database Initialization
-The container runs `prisma db push` on every start, so new (additive) schema changes are applied automatically on deploy. To seed the default admin and campuses on a fresh database, run:
-1. In the Coolify dashboard, select the `app` container and open the **Terminal / Execute Command** tab.
-2. Run the initialization script:
-   ```bash
-   sh scripts/init.sh
-   ```
-   *Alternatively, run from your server CLI:*
-   ```bash
-   docker compose exec app sh scripts/init.sh
-   ```
-
----
-
-## 6. Local Development
-
-### Bare Metal (Node.js & Local PostgreSQL)
-
-1. **Clone and enter repository**:
-   ```bash
-   cd booking-app
-   ```
-
-2. **Configure environment**:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your local PostgreSQL credentials
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-4. **Sync Prisma schema**:
-   ```bash
-   npx prisma db push
-   ```
-
-5. **Seed the database**:
-   ```bash
-   npm run db:seed
-   ```
-
-6. **Start development server**:
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-### Docker Compose (Local Development)
-
-To run the complete stack (PostgreSQL + Next.js with hot-reloading) inside Docker:
-
-```bash
-# 1. Ensure .env exists
-cp .env.example .env
-
-# 2. Start PostgreSQL and development app
-docker compose up --build
-```
-
-`docker-compose.override.yml` is automatically applied:
-- Mounts source code into the container for live editing.
-- Runs `npm run dev` with Next.js fast-refresh.
-- Exposes PostgreSQL on port `5432` and the app on port `3000`.
-
-To seed the database inside the running container:
-```bash
-docker compose exec app npx prisma db push
-docker compose exec app npm run db:seed
-```
-
----
-
-## 7. Default Admin Account
-
-During database seeding (`npm run db:seed`), a default system administrator account is created:
-
-- **Email**: `admin@school.edu`
-- **Password**: `Admin1234!`
-- **Role**: `ADMIN`
+- Email `admin@school.edu`, password `Admin1234!`
 
 > [!CAUTION]
-> **Security Notice**: Immediately log in and change this password in production or when exposing the application to public networks!
+> Change this password right after the first sign-in on any server that others can reach.
 
 ---
 
-## 8. User Roles Explanation
+## 3. Schedule import / export
 
-The application enforces Role-Based Access Control (RBAC) defined in the Prisma schema:
-
-| Role | Permissions & Capabilities |
-|---|---|
-| `ADMIN` | **Full Platform Authority**: Can create, edit, and deactivate campuses, buildings, and rooms; view and edit all bookings across all campuses; manage user accounts and assign user roles (`ADMIN`, `SCHEDULER`, `INSTRUCTOR`); configure system-wide integrations. |
-| `SCHEDULER` | **Campus-Wide Scheduling Authority**: Can view availability across all campuses; create, modify, or cancel bookings on behalf of any instructor or department; resolve scheduling conflicts; dispatch calendar invitations and reminders. Cannot alter campus structures or manage user credentials. |
-| `INSTRUCTOR` | **Read-only**: Can view the booking calendar and the room availability grid, filtered by campus and room. Cannot create, edit, cancel, import or export bookings. |
-
-Only `ADMIN` and `SCHEDULER` can create, edit and cancel bookings, and import or export the course schedule (see [Schedule Import / Export](#11-schedule-import--export)).
-
-**Provisioning Flow**:
-When a user logs in via Okta SSO for the first time, an account is automatically created in the database with the default role `INSTRUCTOR`. An `ADMIN` can subsequently elevate the user's role to `SCHEDULER` or `ADMIN`.
-
----
-
-## 9. Sending Invites (Graph API vs. ICS Fallback)
-
-The application features a hybrid calendar delivery system implemented in `src/app/api/invites/route.ts`:
-
-```
-                       ┌─────────────────────────┐
-                       │  Booking Created / Updated │
-                       └────────────┬────────────┘
-                                    │
-               ┌────────────────────┴────────────────────┐
-               ▼                                         ▼
-   Method: "graph" (or "both")               Method: "ics" (or "both")
-┌───────────────────────────────┐         ┌───────────────────────────────┐
-│     Microsoft Graph API       │         │      SMTP & iCalendar         │
-│     (src/lib/graph.ts)        │         │      (src/lib/ics.ts)         │
-├───────────────────────────────┤         ├───────────────────────────────┤
-│ • Connects to Microsoft 365   │         │ • Generates standard .ics     │
-│ • Direct Outlook calendar sync│         │ • Compatible with all clients │
-│ • Native RSVP & Teams events  │         │   (Google, Apple, Outlook)    │
-│ • Automatic event updates     │         │ • Transmitted via Nodemailer  │
-└───────────────────────────────┘         └───────────────────────────────┘
-```
-
-1. **Microsoft Graph API (`graph`)**:
-   - Native integration with Microsoft 365 Exchange Online.
-   - Creates real calendar events directly on the organizer's and attendees' Outlook calendars.
-   - Handles real-time synchronization, meeting updates, and event cancellations (`cancelOutlookEvent`).
-   - Requires valid `AZURE_AD_*` credentials.
-
-2. **iCalendar / SMTP Fallback (`ics`)**:
-   - Generates an RFC 5545-compliant `.ics` iCalendar payload via `ical-generator`.
-   - Dispatches a MIME multipart email with `method=REQUEST` attachment via Nodemailer over SMTP.
-   - Ensures calendar invitations work seamlessly for external attendees using Google Calendar, Apple Calendar, Thunderbird, or mobile mail clients.
-
-3. **Dual Dispatch (`both`)**:
-   - Dispatches both a native Graph calendar booking and a backup ICS email invite to maximize attendee reach and cross-platform compatibility.
-
----
-
-## 10. Adding Campuses and Rooms
-
-### Via Administrative Web Interface
-1. Sign in with an account having the `ADMIN` role.
-2. Navigate to **Campuses** in the navigation bar.
-3. Click **Add Campus**:
-   - Provide Campus Name (e.g., `Downtown Learning Center`), Address, City, State, ZIP, and Phone.
-4. Click into the newly created Campus and click **Add Room**:
-   - Enter Room Name / Number (e.g., `Room 302 - Biology Lab`).
-   - Specify Capacity (e.g., `35`).
-   - Specify Floor and Building.
-   - Select Amenities from the checklist (`Projector`, `Smartboard`, `Computers`, `Whiteboard`, `Video Conferencing`).
-5. Save the room. The room is now immediately available in the booking calendar.
-
-### Programmatic Seeding (`prisma/seed.ts`)
-To configure default campuses and rooms across deployments, update `prisma/seed.ts`:
-
-```typescript
-const campus = await prisma.campus.create({
-  data: {
-    name: 'South Campus',
-    address: 'Chicago, IL, 60637',
-    city: 'Chicago',
-    state: 'IL',
-    zipCode: '60637',
-  },
-});
-
-await prisma.room.createMany({
-  data: [
-    {
-      name: 'Classroom 101',
-      capacity: 35,
-      description: 'Lecture classroom with smartboard',
-      amenities: ['Projector', 'Whiteboard', 'Smartboard'],
-      campusId: campus.id,
-    },
-    {
-      name: 'Computer Lab 2',
-      capacity: 25,
-      description: 'High-performance PC workstation lab',
-      amenities: ['Computers', 'Projector'],
-      campusId: campus.id,
-    },
-  ],
-});
-```
-Then execute:
-```bash
-npm run db:seed
-```
-
----
-
-## License
-Proprietary — Internal educational software for Midwestern Career College. All rights reserved.
-
----
-
-## 11. Schedule Import / Export
-
-Admins and schedulers see an **Import / Export** button on the Bookings page.
+Users with the *import* permission see an **Import / Export** button on the Bookings page. This is how the course schedule gets into the app; rooms that do not exist yet are created by the import.
 
 **File layout** (CSV or `.xlsx`; the first sheet that has these headers is used):
 
@@ -442,22 +105,22 @@ Admins and schedulers see an **Import / Export** button on the Bookings page.
 |---|---|---|
 | `SessionDate` | `10/13/2026` | Day of the class session |
 | `CampusID` | `Chicago` | Campus code (see below) |
-| `TermID` | `BUSA2608CM1` | Stored on the booking |
+| `TermID` | `BUSA2608CM1` | Stored on the booking; its letters give the program color |
 | `CourseID` | `ACCT100` | Booking title (`ACCT100 – Financial Accounting`) |
 | `SectionID` | `2` | Stored on the booking |
 | `CourseName` | `Financial Accounting` | Booking title |
 | `SessionID` | `15` | Stored on the booking |
-| `TimeSlots` | `Tu/Th 9:00a-12:00p` | Start/end time. The segment whose day matches `SessionDate` is used. |
+| `TimeSlots` | `Tu/Th 9:00a-12:00p` | Start and end time. The segment whose day matches `SessionDate` is used. |
 | `RoomID` | `404` | Room name. Missing rooms are created under the campus. |
 
 Rules:
-- Rows whose `RoomID` contains `Online` or `Virtual` are skipped (not shown on the calendar). Blank rooms and placeholders such as `Clinical Site` are skipped too.
-- Times are read in the campus time zone (Central for Illinois, Eastern for Ohio).
-- Each session is identified by `TermID + CourseID + SectionID + SessionID + SessionDate`; uploading the same file again updates those bookings instead of duplicating them.
-- Upload shows a preview (counts, skipped rows, overlaps) before anything is saved.
-- Export downloads the same columns, filtered by the selected campus/room.
+- Rows whose `RoomID` contains `Online` or `Virtual` are skipped. Blank rooms and placeholders such as `Clinical Site` are skipped too.
+- Times are read in the campus time zone.
+- Each session is identified by `TermID + CourseID + SectionID + SessionID + SessionDate`, so uploading the same file again updates those bookings instead of duplicating them.
+- The upload shows a preview first (counts, skipped rows, overlapping sessions) and saves nothing until you confirm.
+- Export downloads the same columns as CSV or Excel, filtered by the selected campus and room.
 
-**Campus codes** (seeded by `prisma/seed.ts` and created automatically on first import):
+**Campus codes** (from `prisma/campuses.ts`; created by the seed and, if missing, by the first import):
 
 | CampusID | Campus | Address |
 |---|---|---|
@@ -468,25 +131,164 @@ Rules:
 | `Cleveland` | Cleveland Campus | 7261 Engle Rd, Middleburg Heights, OH 44130 |
 | `Columbus` | Columbus Campus | 2780 Airport Dr, Columbus, OH 43219 |
 
-The code and time zone can be edited on the Campuses page.
-
-**Room availability grid**: the grid icon on the Bookings page shows one column per room for a campus and day. Free time is shaded green and booked sessions are filled in. Admins and schedulers can click a free slot to start a booking in that room.
+The code and time zone can be changed on the Campuses page.
 
 ---
 
-## 12. Faster Deploys: Build the Image on GitHub
+## 4. Utilization report
 
-`.github/workflows/docker-image.yml` builds the Docker image on GitHub Actions:
+The **Reports** page answers "how much of our room time is actually used?" for one campus or all of them.
+
+**Choose:** a period (up to a year), a campus or all campuses, which rooms, which weekdays, and which parts of the day (Morning, Afternoon, Evening by default; you can change their times or add more blocks).
+
+**How it is counted** (`src/lib/utilization.ts`):
+
+> Utilization = booked room-hours ÷ available room-hours, where *available* is every room in scope × every selected day × the selected time blocks.
+
+Overlapping bookings in the same room count once, so a room never goes over 100%. Cancelled bookings are not counted. The report itself has a "How the numbers are counted" box, and a short note under each block, explaining every figure in plain language.
+
+**What it shows:**
+- Summary tiles: overall utilization, busiest block, slots with every room busy, rooms never used.
+- When are the rooms busy (weekday × part of day heat map).
+- Rooms, busiest first.
+- By hour of day, and week by week.
+- Who uses the rooms (by program).
+- Campus comparison (when all campuses are selected).
+
+**Output:**
+- **Export Excel** downloads the full report as `.xlsx` from `/api/reports/utilization?format=xlsx`.
+- **Print / PDF** uses the browser's print dialog. The print layout keeps the colors, keeps each block on one page where it fits, and prints every room (long room tables continue over several pages).
+
+---
+
+## 5. How the code is organized
+
+```
+prisma/
+  schema.prisma        Database tables: User, Campus, Room, Booking, RolePermission (+ NextAuth tables)
+  seed.ts              Creates the default admin and the campuses
+  campuses.ts          The campus list (codes, addresses, time zones)
+src/
+  app/                 Next.js App Router: one folder per page
+    bookings/ rooms/ reports/ campuses/ dashboard/ profile/ login/
+    admin/users/ admin/permissions/
+    api/               Route handlers (JSON API)
+      bookings/          list, create, update, cancel; import/ and export/
+      rooms/ campuses/ users/ permissions/ programs/
+      reports/utilization/   report as JSON or xlsx
+      invites/           send calendar invites for a booking
+      health/            container health check
+      auth/[...nextauth]/ sign-in (NextAuth)
+  components/
+    calendar/          RoomTimetable (Rooms by day), RoomAvailability (Room timeline),
+                       BookingCalendar (Week), CampusOverview, ProgramLegend
+    bookings/          Booking form, detail modal, Import / Export modal
+    layout/ ui/ rooms/ campuses/ auth/ providers/
+  lib/
+    auth.ts            NextAuth setup (Okta + email/password, JWT sessions)
+    permissions*.ts    Roles, features, defaults, server-side checks
+    schedule*.ts       Reading and writing the schedule spreadsheet
+    utilization.ts     Utilization report calculation
+    time-blocks.ts     Morning / Afternoon / Evening blocks
+    programs.ts        Program colors from TermID
+    dates.ts           Calendar-date and time-zone helpers
+    branding.ts        App name, college name and logo URLs
+    graph.ts, ics.ts   Outlook (Graph) and .ics email invites
+```
+
+Main libraries: FullCalendar (week view), ExcelJS (CSV/XLSX import, export and report), NextAuth v4, Prisma 5, Headless UI and Heroicons, date-fns, Zod, react-hot-toast.
+
+---
+
+## 6. Running it locally
+
+You need Node.js 20 and a PostgreSQL 16 database.
+
+```bash
+cp .env.example .env          # then set DATABASE_URL and NEXTAUTH_SECRET
+npm install
+npx prisma db push            # create the tables
+npm run db:seed               # default admin + campuses
+npm run dev                   # http://localhost:3000
+```
+
+Sign in with `admin@school.edu` / `Admin1234!`, then import a schedule file on the Bookings page to get rooms and bookings.
+
+Or run the whole stack (PostgreSQL + the production build) with Docker:
+
+```bash
+cp .env.example .env
+docker compose up --build
+docker compose exec app sh scripts/init.sh   # first time only: tables + seed
+```
+
+The app container listens on port 3000 inside the Compose network (`expose`, not `ports`); add a `ports: ["3000:3000"]` entry if you want to reach it from your browser.
+
+Other scripts: `npm run build`, `npm run lint`, `npm run db:studio` (Prisma Studio).
+
+---
+
+## 7. Configuration
+
+All settings are environment variables (see `.env.example`).
+
+| Variable | What it is | Required |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection URL | yes |
+| `NEXTAUTH_SECRET` | Secret for signing sessions (`openssl rand -base64 32`) | yes |
+| `NEXTAUTH_URL` | Public URL of the app, e.g. `https://booking.it1dep.com` | yes |
+| `APP_URL` | Public URL, used in links | yes |
+| `APP_NAME` | Name used in emails | no |
+| `OKTA_CLIENT_ID`, `OKTA_CLIENT_SECRET`, `OKTA_ISSUER` | Okta single sign-on | for Okta |
+| `AZURE_AD_CLIENT_ID`, `AZURE_AD_CLIENT_SECRET`, `AZURE_AD_TENANT_ID` | Microsoft Graph (Outlook) invites | for Outlook invites |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | SMTP for `.ics` email invites | for email invites |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Database container settings in Docker Compose | in Docker |
+| `IMAGE_TAG` | Image version used by `docker-compose.ghcr.yml` (default `latest`) | no |
+
+**Okta.** Create an *OIDC Web Application* in the Okta admin console with sign-in redirect `{APP_URL}/api/auth/callback/okta` and sign-out redirect `{APP_URL}/login`. Put its client ID and secret in `OKTA_CLIENT_ID` / `OKTA_CLIENT_SECRET` and the Okta domain (e.g. `https://school.okta.com`) in `OKTA_ISSUER`.
+
+**Branding.** The app name ("Room calendar"), college name and logo URLs are in `src/lib/branding.ts`. The logos load from mccollege.edu; to bundle copies, put them under `public/brand/` and point the paths there.
+
+---
+
+## 8. Deploying (Coolify + GitHub image)
+
+Production runs on Coolify with two containers: PostgreSQL 16 and the app.
+
+**How the image is built.** `.github/workflows/docker-image.yml` runs on GitHub Actions:
 - **Pull requests:** build only, to check the image still builds.
-- **Pushes to `main`:** build and publish `ghcr.io/gagaren77/roombook:latest` and `:sha-<commit>`.
+- **Pushes to `main`:** build and publish `ghcr.io/gagaren77/roombook:latest` and `:sha-<commit>`. If the repository secrets `COOLIFY_WEBHOOK_URL` and `COOLIFY_TOKEN` are set, it then calls Coolify's deploy webhook, so merging to `main` redeploys automatically.
 
-`docker-compose.ghcr.yml` is the same stack, except that the app pulls that image instead of building on the server, so a deploy takes seconds.
+**Which Compose file.**
+- `docker-compose.ghcr.yml` pulls the prebuilt image, so a deploy takes seconds. This is the one to point Coolify at (*app → General → Build pipeline → Docker compose location* = `/docker-compose.ghcr.yml`). The `roombook` package on GitHub must be public, or the server needs `docker login ghcr.io` with a `read:packages` token.
+- `docker-compose.yml` builds the image on the server from the `Dockerfile` (slower, no GitHub needed).
 
-**Switching Coolify over (one time):**
-1. Merge to `main` and wait for the **Docker image** workflow to go green (repo → Actions).
-2. On GitHub, go to your profile → **Packages** → `roombook` → Package settings and make sure visibility is **Public**. If it's private, the server needs `docker login ghcr.io` with a token that has `read:packages`.
-3. In Coolify (app → General → Build pipeline), set **Docker compose location** to `/docker-compose.ghcr.yml`, then click Deploy.
+**On every start** the container runs `prisma db push`, so new, additive schema changes are applied automatically. `db push` refuses destructive changes (dropping columns or tables) without a flag, so those need a manual step.
 
-To roll back, set `IMAGE_TAG=sha-<commit>` in the app's environment variables and redeploy, or point Coolify back at `/docker-compose.yml`.
+**First deploy on an empty database:** open a terminal on the `app` container in Coolify and run `sh scripts/init.sh` (creates the tables and runs the seed). The seed is safe to run again.
 
-**Optional auto-deploy:** add `COOLIFY_WEBHOOK_URL` (Coolify → app → Webhooks → Deploy Webhook) and `COOLIFY_TOKEN` (Coolify → Keys & Tokens → API tokens) as repository secrets. Each new image on `main` will then redeploy automatically.
+**Rolling back:** set `IMAGE_TAG=sha-<commit>` in the app's environment variables and redeploy.
+
+**Health check:** `GET /api/health`.
+
+---
+
+## 9. Calendar invites
+
+The booking detail window has a **Send Invites** button (`src/app/api/invites/route.ts`), which tries both delivery methods:
+
+- **`.ics` email** (`src/lib/ics.ts`): builds an iCalendar invite with `ical-generator` and emails it through SMTP with Nodemailer. Works with Outlook, Google and Apple calendars. Needs the `SMTP_*` variables.
+- **Microsoft Graph** (`src/lib/graph.ts`): meant to create the event directly in Outlook. Needs the `AZURE_AD_*` variables and an Azure app registration with `Calendars.ReadWrite` application permission. See the limitation below.
+
+---
+
+## 10. Known limitations
+
+- **Outlook (Graph) invites are not finished.** `src/lib/graph.ts` still uses a placeholder token instead of a real MSAL sign-in, so Graph calls fail even with the `AZURE_AD_*` variables set. Use the `.ics` email method.
+- Recurring bookings are not supported in the booking form; repeating classes come in through the schedule import, one booking per session.
+
+---
+
+## License
+
+Proprietary. Internal software for Midwestern Career College. All rights reserved.
