@@ -225,7 +225,7 @@ export function BookingsPageClient() {
           <PageHeader
             title="Bookings"
             actions={
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Calendar view">
                   {VIEWS.map(({ id, label, title, Icon }) => (
                     <button

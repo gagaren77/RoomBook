@@ -402,34 +402,34 @@ export function ReportsPageClient() {
               <p className="mb-1.5 text-sm font-medium text-slate-700">Time blocks</p>
               <div className="flex flex-wrap items-center gap-2">
                 {filters.blocks.map((b, i) => (
-                  <div key={i} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5">
+                  <div key={i} className="flex w-full flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 sm:w-auto sm:flex-nowrap">
                     <input
                       type="text"
                       aria-label={`Block ${i + 1} name`}
                       value={b.name}
                       onChange={(e) => update({ blocks: filters.blocks.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)) })}
-                      className="!w-28 !py-1 text-sm"
+                      className="order-1 min-w-0 flex-1 basis-[calc(100%-2.5rem)] !py-1 text-sm sm:order-none sm:!w-28 sm:flex-none sm:basis-auto"
                     />
                     <input
                       type="time"
                       aria-label={`${b.name || 'Block'} starts`}
                       value={b.start}
                       onChange={(e) => update({ blocks: filters.blocks.map((x, j) => (j === i ? { ...x, start: e.target.value } : x)) })}
-                      className="!w-auto !py-1 text-sm"
+                      className="order-3 min-w-0 flex-1 !py-1 text-sm sm:order-none sm:!w-auto sm:flex-none"
                     />
-                    <span className="text-slate-400">–</span>
+                    <span className="order-3 text-slate-400 sm:order-none">–</span>
                     <input
                       type="time"
                       aria-label={`${b.name || 'Block'} ends`}
                       value={b.end}
                       onChange={(e) => update({ blocks: filters.blocks.map((x, j) => (j === i ? { ...x, end: e.target.value } : x)) })}
-                      className="!w-auto !py-1 text-sm"
+                      className="order-3 min-w-0 flex-1 !py-1 text-sm sm:order-none sm:!w-auto sm:flex-none"
                     />
                     <button
                       type="button"
                       aria-label={`Remove ${b.name || 'block'}`}
                       onClick={() => update({ blocks: filters.blocks.filter((_, j) => j !== i) })}
-                      className="rounded-md p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                      className="order-2 flex-shrink-0 rounded-md p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 sm:order-none"
                     >
                       <XMarkIcon className="h-4 w-4" />
                     </button>

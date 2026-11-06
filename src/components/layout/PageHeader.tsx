@@ -13,7 +13,7 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
         {subtitle && <p className="mt-1.5 text-sm text-slate-500">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-shrink-0 items-center gap-3">{actions}</div>}
+      {actions && <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-shrink-0">{actions}</div>}
     </div>
   );
 }

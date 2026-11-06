@@ -143,10 +143,10 @@ export function RoomsPageClient() {
             }
           />
 
-          <div className="mb-6 flex items-center">
-            <label className="mr-3 text-sm font-medium text-gray-700">Filter by Campus:</label>
+          <div className="mb-6 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+            <label className="whitespace-nowrap text-sm font-medium text-gray-700">Filter by campus</label>
             <select
-              className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm max-w-xs"
+              className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:max-w-xs sm:text-sm"
               value={selectedCampusId}
               onChange={(e) => setSelectedCampusId(e.target.value)}
             >

@@ -5,12 +5,14 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  /** Classes for the wrapper (label + input), e.g. grid column spans. */
+  containerClassName?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, id, ...props }, ref) => {
+  ({ className, containerClassName, label, error, helperText, id, ...props }, ref) => {
     return (
-      <div className="w-full">
+      <div className={cn('w-full', containerClassName)}>
         {label && (
           <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-slate-700">
             {label}

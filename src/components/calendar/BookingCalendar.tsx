@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -34,6 +35,12 @@ export function BookingCalendar({
   onToggleProgram,
   onShowAllPrograms,
 }: BookingCalendarProps) {
+
+  // Seven columns don't fit on a phone, so start on the Day view there.
+  const calendarRef = useRef<FullCalendar>(null);
+  useEffect(() => {
+    if (window.innerWidth < 640) calendarRef.current?.getApi().changeView('timeGridDay');
+  }, []);
 
   const programs = usePrograms();
   const counts = countPrograms(bookings);
@@ -90,6 +97,7 @@ export function BookingCalendar({
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
           }}
+          ref={calendarRef}
           initialView="timeGridWeek"
           editable={false}
           selectable={selectable && !!onDateSelect}
