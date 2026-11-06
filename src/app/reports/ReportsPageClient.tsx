@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { programColor } from '@/lib/programs';
 import { usePrograms } from '@/lib/use-programs';
 import { DEFAULT_BLOCKS, hourLabel, parseClock, toClockInput } from '@/lib/time-blocks';
+import { BRAND } from '@/lib/branding';
 import { CalendarDate, DAY_NAMES, addDays, addMonths, firstOfMonth, isoDate, lastOfMonth, parseIsoDate, rangeLabel } from '@/lib/dates';
 import type { Measure, UtilizationReport } from '@/lib/utilization';
 
@@ -18,6 +19,8 @@ type Filters = { campusId: string; roomIds: string[]; from: string; to: string; 
 
 const FILTERS_KEY = 'roombook.reportFilters';
 const MAX_BLOCKS = 8;
+/** Room tables longer than this start on a new page when printed and may run over several. */
+const LONG_TABLE = 22;
 
 function localToday(): CalendarDate {
   const d = new Date();
@@ -103,7 +106,7 @@ function Bars({ items, height = 128 }: { items: { tick: string; value: number; t
   const max = Math.max(1, ...items.map((i) => i.value));
   return (
     <div className="overflow-x-auto">
-      <div style={{ minWidth: `${items.length * 22}px` }}>
+      <div className="print:!min-w-0" style={{ minWidth: `${items.length * 22}px` }}>
         <div className="flex items-end gap-1 border-b border-slate-200" style={{ height }}>
           {items.map((it, i) => (
             <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={it.title}>
@@ -132,7 +135,11 @@ export function ReportsPageClient() {
   const [ran, setRan] = useState<Filters | null>(null);
   const [loading, setLoading] = useState(false);
   const [quick, setQuick] = useState('this-month');
+  const [printedOn, setPrintedOn] = useState('');
   const programs = usePrograms();
+  useEffect(() => {
+    setPrintedOn(new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }));
+  }, []);
   const firstRun = useRef(false);
 
   // The last filters are remembered in this browser, and the report runs right away.
@@ -240,7 +247,10 @@ export function ReportsPageClient() {
       </div>
 
       <main className="py-10 print:py-0">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 print:max-w-none print:px-0">
+          <p className="hidden text-xs text-slate-500 print:block">
+            {BRAND.org} · {BRAND.name} · printed {printedOn}
+          </p>
           <PageHeader
             title="Reports · Room utilization"
             subtitle={ran ? `${campusName} · ${period} · ${ran.days.map((d) => DAY_NAMES[d - 1]).join(', ')}` : 'How much of the room time is booked'}
@@ -472,7 +482,7 @@ export function ReportsPageClient() {
                 <div className="rounded-2xl border border-slate-200/70 bg-white p-12 text-center text-sm text-slate-500 shadow-card">No active rooms match these filters.</div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8 print:grid-cols-4 print:gap-3 print:break-inside-avoid">
                     <Tile
                       hero
                       label="Overall utilization"
@@ -500,8 +510,8 @@ export function ReportsPageClient() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card">
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 print:grid-cols-2 print:gap-4">
+                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-12 xl:col-span-5 print:order-1 print:col-span-1">
                       <h2 className="text-base font-semibold text-slate-900">When are the rooms busy?</h2>
                       <p className="mb-3 text-xs text-slate-500">Share of room-hours booked, by weekday and time block. Darker is busier.</p>
                       <div className="overflow-x-auto">
@@ -543,7 +553,11 @@ export function ReportsPageClient() {
                       </div>
                     </section>
 
-                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card">
+                    <section
+                      className={`rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-12 xl:col-span-7 print:order-6 print:col-span-2 print:break-inside-auto ${
+                        report.rooms.length > LONG_TABLE ? 'print:break-before-page' : 'print:break-inside-avoid'
+                      }`}
+                    >
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <h2 className="text-base font-semibold text-slate-900">Rooms, busiest first</h2>
                         {report.neverUsed.length > 0 && (
@@ -553,17 +567,16 @@ export function ReportsPageClient() {
                         )}
                       </div>
                       <p className="mb-3 text-xs text-slate-500">Each room has {hours(report.rooms[0]?.total.available || 0)} available in this period.</p>
-                      <div className="max-h-[480px] overflow-auto">
-                        <table className="w-full min-w-[560px] border-collapse text-sm tabular-nums">
-                          <thead className="sticky top-0 bg-white">
-                            <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      <div className="max-h-[480px] overflow-auto print:max-h-none print:overflow-visible">
+                        <table className="report-rooms w-full min-w-[560px] border-collapse text-sm tabular-nums print:min-w-0">
+                          <thead className="sticky top-0 bg-white print:static">
+                            <tr className="whitespace-nowrap text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                               <th className="px-1 py-1.5">Room</th>
-                              {showCampusColumn && <th className="px-1 py-1.5">Campus</th>}
-                              <th className="w-[30%] px-1 py-1.5">Utilization</th>
+                              <th className="w-[30%] min-w-[9rem] px-1 py-1.5">Utilization</th>
                               <th className="px-1 py-1.5 text-right">Hours</th>
                               {report.blocks.map((b) => (
                                 <th key={b.name} className="px-1 py-1.5 text-right">
-                                  {b.name.slice(0, 5)}
+                                  {b.name}
                                 </th>
                               ))}
                               <th className="px-1 py-1.5 text-right">Days used</th>
@@ -572,8 +585,10 @@ export function ReportsPageClient() {
                           <tbody>
                             {report.rooms.map((r) => (
                               <tr key={r.id} className="border-t border-slate-100">
-                                <td className={`px-1 py-2 font-semibold ${r.total.hours ? 'text-slate-900' : 'text-rose-700'}`}>{r.name}</td>
-                                {showCampusColumn && <td className="px-1 py-2 text-xs text-slate-500">{r.campusName}</td>}
+                                <td className={`whitespace-nowrap px-1 py-2 font-semibold ${r.total.hours ? 'text-slate-900' : 'text-rose-700'}`}>
+                                  {r.name}
+                                  {showCampusColumn && <span className="block text-[11px] font-normal text-slate-500">{r.campusName}</span>}
+                                </td>
                                 <td className="px-1 py-2">
                                   <div className="flex items-center gap-2">
                                     <div className="h-2.5 flex-1 overflow-hidden rounded-r bg-indigo-100">
@@ -582,7 +597,7 @@ export function ReportsPageClient() {
                                     <span className="w-14 text-right font-semibold">{pct(r.total)}</span>
                                   </div>
                                 </td>
-                                <td className="px-1 py-2 text-right">{hours(r.total.hours)}</td>
+                                <td className="whitespace-nowrap px-1 py-2 text-right">{hours(r.total.hours)}</td>
                                 {r.byBlock.map((m, i) => (
                                   <td key={i} className="px-1 py-2 text-right text-slate-600">
                                     {Math.round(m.pct)}%
@@ -597,20 +612,18 @@ export function ReportsPageClient() {
                         </table>
                       </div>
                     </section>
-                  </div>
 
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card">
+                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-4 print:order-3 print:col-span-1">
                       <h2 className="text-base font-semibold text-slate-900">By hour of day</h2>
                       <p className="mb-3 text-xs text-slate-500">Share of the {report.roomCount} rooms in use, averaged over the {report.dayCount} days.</p>
                       <Bars items={hourItems} />
                     </section>
-                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card">
+                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-4 print:order-4 print:col-span-1">
                       <h2 className="text-base font-semibold text-slate-900">Week by week</h2>
                       <p className="mb-3 text-xs text-slate-500">Utilization per week, {hours(report.weeks[0]?.available || 0)} available in a full week.</p>
                       <Bars items={weekItems} />
                     </section>
-                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card">
+                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-4 print:order-2 print:col-span-1">
                       <h2 className="text-base font-semibold text-slate-900">Who uses the rooms</h2>
                       <p className="mb-3 text-xs text-slate-500">Share of booked hours by program, in the calendar&apos;s colors.</p>
                       {report.programs.length === 0 ? (
@@ -644,13 +657,12 @@ export function ReportsPageClient() {
                         </>
                       )}
                     </section>
-                  </div>
 
-                  {report.campuses.length > 1 && (
-                    <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card">
-                      <h2 className="text-base font-semibold text-slate-900">Campus comparison</h2>
-                      <p className="mb-3 text-xs text-slate-500">Same period and time blocks, each campus in its own time zone.</p>
-                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+                    {report.campuses.length > 1 && (
+                      <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-12 print:order-5 print:col-span-2">
+                        <h2 className="text-base font-semibold text-slate-900">Campus comparison</h2>
+                        <p className="mb-3 text-xs text-slate-500">Same period and time blocks, each campus in its own time zone.</p>
+                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 print:grid-cols-3">
                         {report.campuses.map((c) => (
                           <div key={c.id} className="rounded-xl border border-slate-200 p-3">
                             <p className="truncate text-sm font-semibold text-slate-900" title={c.name}>
@@ -665,9 +677,10 @@ export function ReportsPageClient() {
                             </p>
                           </div>
                         ))}
-                      </div>
-                    </section>
-                  )}
+                        </div>
+                      </section>
+                    )}
+                  </div>
                 </>
               )}
             </div>
