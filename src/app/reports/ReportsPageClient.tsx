@@ -102,6 +102,16 @@ function Tile({ label, value, sub, hero, tone }: { label: string; value: string;
   );
 }
 
+/** A short plain-language note under a report block on how its numbers are worked out. Printed too. */
+function HowCounted({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mt-3 border-t border-slate-100 pt-2 text-[11px] leading-snug text-slate-500">
+      <span className="font-semibold text-slate-600">How it&apos;s counted: </span>
+      {children}
+    </p>
+  );
+}
+
 function Bars({ items, height = 128 }: { items: { tick: string; value: number; title: string; label?: boolean }[]; height?: number }) {
   const max = Math.max(1, ...items.map((i) => i.value));
   return (
@@ -239,6 +249,8 @@ export function ReportsPageClient() {
 
   const unionHours = report ? Math.round((report.total.available / Math.max(1, report.roomCount * report.dayCount)) * 10) / 10 : 0;
   const showCampusColumn = !ran?.campusId;
+  const blockList = report ? report.blocks.map((b) => `${b.name} ${hourLabel(b.start)}–${hourLabel(b.end)}`).join(', ') : '';
+  const dayList = ran ? ran.days.map((d) => DAY_NAMES[d - 1]).join(', ') : '';
 
   return (
     <div className="min-h-screen">
@@ -510,6 +522,43 @@ export function ReportsPageClient() {
                     />
                   </div>
 
+                  <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card print:break-inside-avoid print:p-3">
+                    <h2 className="text-sm font-semibold text-slate-900">How the numbers are counted</h2>
+                    <p className="mt-1 text-xs leading-snug text-slate-600">
+                      A room counts as busy whenever it has a booking that is not cancelled. Only booked time that falls inside the time blocks ({blockList}) on the selected
+                      weekdays ({dayList}) during {period} counts. If two classes overlap in the same room, that time counts once, so a room never goes over 100%. Inactive rooms and
+                      campuses are left out, and each campus is measured in its own time zone.
+                    </p>
+                    <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-xs leading-snug sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-2">
+                      <div>
+                        <dt className="font-semibold text-slate-800">Overall utilization</dt>
+                        <dd className="text-slate-600">
+                          Booked room-hours ÷ available room-hours. Available = {report.roomCount} rooms × {report.dayCount} days × {unionHours} h of time blocks per day ={' '}
+                          {hours(report.total.available)}.
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold text-slate-800">Each time block ({report.blocks.map((b) => b.name).join(', ')})</dt>
+                        <dd className="text-slate-600">The same sum for that block only: booked hours inside the block ÷ (rooms × days × the block&apos;s length).</dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold text-slate-800">Busiest block</dt>
+                        <dd className="text-slate-600">The weekday and time block with the highest share booked, averaged over every date of that weekday in the period. It is the darkest cell in the table below.</dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold text-slate-800">Slots with every room busy</dt>
+                        <dd className="text-slate-600">
+                          A slot is one date × one time block ({report.dayCount} days × {report.blocks.length} blocks = {report.fullyBooked.of} slots). It counts when every room has at least
+                          one booking in it, even a short one. Peak is the most rooms booked in a single slot.
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold text-slate-800">Rooms never used</dt>
+                        <dd className="text-slate-600">Rooms with no booked time inside the time blocks on any selected day. Bookings outside the blocks do not count.</dd>
+                      </div>
+                    </dl>
+                  </section>
+
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 print:grid-cols-2 print:gap-4">
                     <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-12 xl:col-span-5 print:order-1 print:col-span-1">
                       <h2 className="text-base font-semibold text-slate-900">When are the rooms busy?</h2>
@@ -551,6 +600,11 @@ export function ReportsPageClient() {
                           </tbody>
                         </table>
                       </div>
+                      <HowCounted>
+                        Each cell is the booked hours of all rooms in that block on that weekday ÷ (rooms × how many of that weekday fall in the period × the block&apos;s length). For example, a
+                        Monday Morning cell compares the booked time against every room for every Monday morning in the period. &quot;Whole day&quot; uses all the time blocks together,
+                        &quot;All days&quot; uses every selected weekday, and &quot;free&quot; means nothing was booked.
+                      </HowCounted>
                     </section>
 
                     <section
@@ -611,17 +665,30 @@ export function ReportsPageClient() {
                           </tbody>
                         </table>
                       </div>
+                      <HowCounted>
+                        Utilization is the room&apos;s booked hours inside the time blocks ÷ the hours it had available ({report.dayCount} days × {unionHours} h ={' '}
+                        {hours(report.rooms[0]?.total.available || 0)}). Hours is that booked time. Each block column is the same share for that block alone. Days used is the number of
+                        selected days with at least one booking inside the blocks. Rooms are sorted by booked hours; rooms in red were never used.
+                      </HowCounted>
                     </section>
 
                     <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-4 print:order-3 print:col-span-1">
                       <h2 className="text-base font-semibold text-slate-900">By hour of day</h2>
                       <p className="mb-3 text-xs text-slate-500">Share of the {report.roomCount} rooms in use, averaged over the {report.dayCount} days.</p>
                       <Bars items={hourItems} />
+                      <HowCounted>
+                        For each hour, the booked minutes of all rooms in that hour ÷ (rooms × days × 60 minutes). 50% at 10a means that on an average day, half the rooms were booked from 10 to
+                        11. Shown from the first block&apos;s start to the last block&apos;s end.
+                      </HowCounted>
                     </section>
                     <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-4 print:order-4 print:col-span-1">
                       <h2 className="text-base font-semibold text-slate-900">Week by week</h2>
                       <p className="mb-3 text-xs text-slate-500">Utilization per week, {hours(report.weeks[0]?.available || 0)} available in a full week.</p>
                       <Bars items={weekItems} />
+                      <HowCounted>
+                        Booked hours in the week ÷ (rooms × the selected days of that week inside the period × {unionHours} h). Weeks start on Monday. A week cut off by the start or end of the
+                        period only counts its days inside the period, so its percentage is still comparable.
+                      </HowCounted>
                     </section>
                     <section className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card lg:col-span-4 print:order-2 print:col-span-1">
                       <h2 className="text-base font-semibold text-slate-900">Who uses the rooms</h2>
@@ -656,6 +723,10 @@ export function ReportsPageClient() {
                           </ul>
                         </>
                       )}
+                      <HowCounted>
+                        Each booking&apos;s program is the letters at the start of its term ID (or its course ID when the term ID has none), e.g. ESLD from ESLD2609CM1; bookings with neither go to Other. The share is that program&apos;s
+                        booked hours inside the time blocks ÷ all booked hours. It splits the booked time, not the available time, so the shares add up to 100%.
+                      </HowCounted>
                     </section>
 
                     {report.campuses.length > 1 && (
@@ -678,6 +749,10 @@ export function ReportsPageClient() {
                           </div>
                         ))}
                         </div>
+                        <HowCounted>
+                          Each campus uses the same sum as Overall utilization, for its own rooms only: booked room-hours ÷ (its rooms × {report.dayCount} days × {unionHours} h). Campuses are
+                          sorted from busiest to least busy.
+                        </HowCounted>
                       </section>
                     )}
                   </div>
