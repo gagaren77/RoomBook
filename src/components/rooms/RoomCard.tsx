@@ -15,14 +15,14 @@ export function RoomCard({ room, isAdmin, onEdit, onDelete }: RoomCardProps) {
     <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover flex flex-col">
       <div className="p-5 flex-1">
         <div className="flex justify-between items-start">
-          <div>
+          <div className="min-w-0">
             <h3 className="text-lg font-medium text-gray-900 truncate">
               {room.name}
             </h3>
-            <p className="mt-1 flex items-center text-sm text-gray-500">
-              <span className="font-medium mr-1 text-gray-700">{room.campus?.name}</span>
-              {room.building && <span> • {room.building}</span>}
-              {room.floor && <span> • Fl {room.floor}</span>}
+            <p className="mt-1 text-sm text-gray-500">
+              <span className="font-medium text-gray-700">{room.campus?.name}</span>
+              {room.building && <span className="whitespace-nowrap"> • {room.building}</span>}
+              {room.floor && <span className="whitespace-nowrap"> • Fl {room.floor}</span>}
             </p>
           </div>
           <div className="flex-shrink-0 ml-2">

@@ -125,10 +125,10 @@ export function DashboardPageClient() {
                 ))}
               </dl>
 
-              <div className="mt-8 grid gap-6 lg:grid-cols-3">
+              <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
                 {/* Upcoming */}
                 <section className="rounded-2xl border border-slate-200/70 bg-white shadow-card lg:col-span-2">
-                  <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                  <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6">
                     <h2 className="text-base font-semibold text-slate-900">Upcoming bookings</h2>
                     <Link
                       href="/bookings"
@@ -147,7 +147,7 @@ export function DashboardPageClient() {
                         const start = new Date(b.startTime);
                         const end = new Date(b.endTime);
                         return (
-                          <li key={b.id} className="flex items-center gap-4 px-6 py-4">
+                          <li key={b.id} className="flex items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6">
                             <div
                               className="h-10 w-1.5 flex-shrink-0 rounded-full"
                               style={{ backgroundColor: b.color || '#6366f1' }}
@@ -158,7 +158,7 @@ export function DashboardPageClient() {
                                 {b.room?.name} · {b.room?.campus?.name}
                               </p>
                             </div>
-                            <div className="text-right">
+                            <div className="flex-shrink-0 text-right">
                               <p className="text-sm font-medium text-slate-900">{dayLabel(start)}</p>
                               <p className="text-sm text-slate-500">
                                 {format(start, 'h:mm a')} – {format(end, 'h:mm a')}

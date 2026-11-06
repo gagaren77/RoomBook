@@ -73,7 +73,7 @@ export function PermissionsPageClient() {
             }
           />
 
-          <div className="rounded-2xl border border-slate-200/70 bg-white shadow-card">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/70 bg-white shadow-card">
             {!matrix ? (
               <div className="flex justify-center py-16">
                 <LoadingSpinner className="h-8 w-8 text-blue-600" />
@@ -82,12 +82,12 @@ export function PermissionsPageClient() {
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <th className="px-5 py-3">Feature</th>
-                    <th className="px-4 py-3 text-center">
+                    <th className="px-4 py-3 sm:px-5">Feature</th>
+                    <th className="hidden px-4 py-3 text-center sm:table-cell">
                       <RoleBadge role="ADMIN" />
                     </th>
                     {EDITABLE_ROLES.map((role) => (
-                      <th key={role} className="px-4 py-3 text-center">
+                      <th key={role} className="px-1.5 py-3 text-center sm:px-4">
                         <RoleBadge role={role} />
                       </th>
                     ))}
@@ -96,11 +96,11 @@ export function PermissionsPageClient() {
                 <tbody>
                   {FEATURES.map((f) => (
                     <tr key={f.key} className="border-b border-slate-100 last:border-0">
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-4 sm:px-5">
                         <p className="font-semibold text-slate-900">{f.label}</p>
                         <p className="text-xs text-slate-500">{f.description}</p>
                       </td>
-                      <td className="px-4 py-4 text-center" title="Admins can always do this">
+                      <td className="hidden px-4 py-4 text-center sm:table-cell" title="Admins can always do this">
                         <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-slate-400">
                           <CheckIcon className="h-4 w-4" />
                         </span>
@@ -109,7 +109,7 @@ export function PermissionsPageClient() {
                         const on = matrix[role][f.key];
                         const id = `${role}-${f.key}`;
                         return (
-                          <td key={role} className="px-4 py-4 text-center">
+                          <td key={role} className="px-1.5 py-4 text-center sm:px-4">
                             <input
                               id={id}
                               type="checkbox"
